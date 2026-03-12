@@ -152,9 +152,13 @@ cursor:pointer;
 <div id="shiftContainer"></div>
 
 <div style="display:flex;gap:8px;margin-top:10px">
-<button class="addRow" onclick="enableAddMode()">Add Plan</button>
-<button class="addRow" onclick="enableUpdateMode()">Update Plan</button>
-<button class="saveBtn" onclick="savePlan()">Save Plan</button>
+
+<button id="addPlanBtn" class="addRow" onclick="enableAddMode()">Add Plan</button>
+
+<button id="updatePlanBtn" class="addRow" onclick="enableUpdateMode()">Update Plan</button>
+
+<button id="savePlanBtn" class="saveBtn" onclick="savePlan()">Save Plan</button>
+
 </div>
 
 </div>
@@ -179,6 +183,8 @@ const KEYS=[
 const SHIFTS=["A","B","C"];
 
 let plannerMode="view";
+let dateHasPlan=false;
+
 let currentMonth=new Date();
 let selectedDate=null;
 let monthlyData=[];
@@ -186,9 +192,13 @@ let monthlyData=[];
 init();
 
 async function init(){
+
 createShiftTables();
 generateCalendar();
-await loadSelectedMonthData();
+await loadMonthData();
+
+lockPlanner();
+
 }
 
 function generateCalendar(){
@@ -210,10 +220,12 @@ for(let d=1;d<=days;d++){
 const date=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
 calendarGrid.innerHTML+=`
+
 <div class="date-card" onclick="selectDate('${date}')">
 <div class="date">${d}</div>
 <div class="small">Planned: <span id="plan_${date}">--</span></div>
 </div>
+
 `;
 
 }
@@ -230,7 +242,7 @@ currentMonth.setMonth(currentMonth.getMonth()+1);
 init();
 }
 
-async function loadSelectedMonthData(){
+async function loadMonthData(){
 
 const start=new Date(currentMonth.getFullYear(),currentMonth.getMonth(),1).getTime();
 const end=new Date(currentMonth.getFullYear(),currentMonth.getMonth()+1,0,23,59,59).getTime();
@@ -266,6 +278,7 @@ const d=r.Plan_Date;
 const q=Number(r.Plan_Quantity)||0;
 
 if(!totals[d]) totals[d]=0;
+
 totals[d]+=q;
 
 });
@@ -283,11 +296,16 @@ if(el) el.innerText=totals[d];
 function selectDate(date){
 
 selectedDate=date;
+
 document.getElementById("selectedDate").innerText=date;
 
 clearTables();
 
+plannerMode="view";
+
 const rows=monthlyData.filter(r=>r.Plan_Date===date);
+
+dateHasPlan = rows.length>0;
 
 rows.forEach(r=>{
 
@@ -301,11 +319,41 @@ row.querySelector(".sku").value=r.Plan_SKU||"";
 row.querySelector(".job").value=r.Plan_Job_Number||"";
 row.querySelector(".qty").value=r.Plan_Quantity||"";
 
-row.querySelectorAll("input").forEach(i=>i.disabled=true);
-
 });
 
+lockPlanner();
+
+updateButtons();
+
 calcDaily();
+
+}
+
+function updateButtons(){
+
+if(dateHasPlan){
+
+addPlanBtn.style.display="inline-block";
+updatePlanBtn.style.display="inline-block";
+
+}else{
+
+addPlanBtn.style.display="inline-block";
+updatePlanBtn.style.display="none";
+
+}
+
+savePlanBtn.disabled=true;
+
+}
+
+function lockPlanner(){
+
+document.querySelectorAll(".planRow input").forEach(i=>i.disabled=true);
+
+document.querySelectorAll(".addBtn").forEach(b=>b.disabled=true);
+
+savePlanBtn.disabled=true;
 
 }
 
@@ -376,6 +424,8 @@ document.querySelectorAll(".planRow input").forEach(i=>i.disabled=true);
 
 document.querySelectorAll(".addBtn").forEach(b=>b.disabled=false);
 
+savePlanBtn.disabled=false;
+
 }
 
 function enableUpdateMode(){
@@ -386,11 +436,16 @@ document.querySelectorAll(".planRow input").forEach(i=>i.disabled=false);
 
 document.querySelectorAll(".addBtn").forEach(b=>b.disabled=true);
 
+savePlanBtn.disabled=false;
+
 }
 
 function clearTables(){
+
 SHIFTS.forEach(s=>document.getElementById(`table_${s}`).innerHTML="");
+
 calcDaily();
+
 }
 
 function calcDaily(){
@@ -406,7 +461,9 @@ const s=r.querySelector(".sku").value;
 const q=Number(r.querySelector(".qty").value);
 
 if(q) total+=q;
+
 if(m) machines.add(m);
+
 if(s) skus.add(s);
 
 });
@@ -473,7 +530,7 @@ body:JSON.stringify(payload)
 
 alert("Plan saved successfully");
 
-await loadSelectedMonthData();
+await loadMonthData();
 
 }
 
