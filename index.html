@@ -402,38 +402,39 @@ return;
 }
 
 let payload=[];
-let i=0;
+let index=0;
 
 document.querySelectorAll(".planRow").forEach(r=>{
 
-const machine=r.querySelector(".machine").value;
-const sku=r.querySelector(".sku").value;
-const job=r.querySelector(".job").value;
-const qty=Number(r.querySelector(".qty").value);
+const machine=r.querySelector(".machine").value.trim();
+const sku=r.querySelector(".sku").value.trim();
+const job=r.querySelector(".job").value.trim();
+const qty=parseFloat(r.querySelector(".qty").value);
+
 const shift=r.dataset.shift;
 
-if(!machine || !qty) return;
+if(machine==="" || isNaN(qty)) return;
 
 payload.push({
 
-ts: Date.now()+i,
+ts: Date.now() + index,
 
 values:{
-Plan_Date:selectedDate,
-Plan_Shift:shift,
-Plan_Machine:machine,
-Plan_SKU:sku,
-Plant_Job_Number:job,
-Plan_Quantity:qty
+Plan_Date: String(selectedDate),
+Plan_Shift: String(shift),
+Plan_Machine: String(machine),
+Plan_SKU: String(sku),
+Plant_Job_Number: String(job),
+Plan_Quantity: Number(qty)
 }
 
 });
 
-i++;
+index++;
 
 });
 
-console.log(payload);
+console.log("Payload sending:",payload);
 
 if(payload.length===0){
 alert("No data to save");
@@ -456,7 +457,6 @@ body:JSON.stringify(payload)
 alert("Plan saved successfully");
 
 }
-
 </script>
 
 </body>
