@@ -373,7 +373,10 @@ alert("Select a date first");
 return;
 }
 
+const API="https://plantwiz.pimateck.in/api/v1/diZQm2TuT8jedMFk4ElX/telemetry";
+
 let rows=[];
+
 document.querySelectorAll(".planRow").forEach(r=>{
 
 const machine=r.querySelector(".machine").value.trim();
@@ -408,7 +411,9 @@ for(const r of rows){
 
 await fetch(API,{
 method:"POST",
-headers:{ "Content-Type":"application/json" },
+headers:{
+"Content-Type":"application/json"
+},
 body:JSON.stringify(r)
 });
 
