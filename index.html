@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta charset="UTF-8">
 <title>Production Planning</title>
 
@@ -11,32 +10,104 @@ body{
 font-family:"Segoe UI",sans-serif;
 background:#f3f4f6;
 margin:0;
-padding:20px;
+padding:15px;
 }
 
-.card{
+.container{
+display:flex;
+gap:16px;
+}
+
+/* LEFT CALENDAR */
+
+.calendar{
+flex:2;
 background:#fff;
-border-radius:12px;
-padding:20px;
+border-radius:10px;
+padding:14px;
 box-shadow:0 2px 10px rgba(0,0,0,.08);
 }
 
-h2{
-color:#1e3a8a;
-margin-bottom:20px;
+.month-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:10px;
+}
+
+.month-header button{
+border:none;
+background:#e2e8f0;
+padding:6px 10px;
+border-radius:6px;
+cursor:pointer;
+}
+
+.calendar-grid{
+display:grid;
+grid-template-columns:repeat(7,1fr);
+gap:8px;
+}
+
+.date-card{
+background:#f8fafc;
+border-radius:8px;
+padding:8px;
+cursor:pointer;
+border-left:4px solid #3b82f6;
+}
+
+.date-card:hover{
+background:#eef2ff;
+}
+
+.date{
+font-weight:600;
+font-size:13px;
+}
+
+.small{
+font-size:11px;
+color:#64748b;
+}
+
+/* RIGHT PANEL */
+
+.plan-panel{
+flex:1;
+background:#fff;
+border-radius:10px;
+padding:14px;
+box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+
+.plan-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:12px;
+}
+
+.summary{
+background:#eef2ff;
+border-radius:8px;
+padding:10px;
+display:flex;
+justify-content:space-between;
+margin-bottom:14px;
+font-size:13px;
 }
 
 .shift{
-margin-bottom:20px;
 border:1px solid #e2e8f0;
 border-radius:8px;
+margin-bottom:12px;
 }
 
-.shift-header{
-padding:10px;
+.shift-title{
+padding:8px;
 font-weight:600;
 background:#f1f5f9;
-cursor:pointer;
 }
 
 table{
@@ -45,9 +116,8 @@ border-collapse:collapse;
 }
 
 th,td{
-padding:8px;
-text-align:left;
-font-size:14px;
+padding:6px;
+font-size:12px;
 }
 
 th{
@@ -56,53 +126,93 @@ background:#f8fafc;
 
 input{
 width:100%;
-padding:6px;
 border:1px solid #cbd5e1;
 border-radius:6px;
+padding:4px;
+font-size:12px;
 }
 
 .addRow{
-margin:10px;
-padding:6px 12px;
+margin:8px;
+padding:6px;
 background:#e2e8f0;
 border:none;
 border-radius:6px;
 cursor:pointer;
+font-size:12px;
 }
 
 .saveBtn{
-margin-top:20px;
-padding:10px 16px;
+margin-top:10px;
+width:100%;
+padding:8px;
 background:#2563eb;
-color:white;
 border:none;
 border-radius:8px;
-cursor:pointer;
+color:#fff;
 font-weight:600;
-}
-
-.summary{
-padding:10px;
-background:#f8fafc;
-font-size:13px;
+cursor:pointer;
 }
 
 </style>
-
 </head>
 
 <body>
 
-<div class="card">
+<div class="container">
 
-<h2>Production Planning</h2>
+<!-- LEFT CALENDAR -->
 
-<label>Select Date</label>
-<input type="date" id="planDate">
+<div class="calendar">
 
-<div id="shifts"></div>
+<div class="month-header">
+
+<button onclick="prevMonth()">◀</button>
+
+<span id="monthLabel"></span>
+
+<button onclick="nextMonth()">▶</button>
+
+</div>
+
+<div id="calendarGrid" class="calendar-grid"></div>
+
+</div>
+
+
+<!-- RIGHT PLANNING PANEL -->
+
+<div class="plan-panel">
+
+<div class="plan-header">
+<h3>Production Plan</h3>
+<span id="selectedDate"></span>
+</div>
+
+<div class="summary">
+
+<div>
+Total Units<br>
+<b id="dailyUnits">0</b>
+</div>
+
+<div>
+Machines<br>
+<b id="dailyMachines">0</b>
+</div>
+
+<div>
+SKUs<br>
+<b id="dailySkus">0</b>
+</div>
+
+</div>
+
+<div id="shiftContainer"></div>
 
 <button class="saveBtn" onclick="savePlan()">Save Plan</button>
+
+</div>
 
 </div>
 
@@ -118,23 +228,102 @@ const JWT=new URLSearchParams(location.search).get("token")||"";
 
 const SHIFTS=["A","B","C"];
 
+let currentMonth=new Date();
+let selectedDate=null;
+
+
 /* INIT */
 
-const shiftsContainer=document.getElementById("shifts");
+generateCalendar();
+createShiftTables();
 
-SHIFTS.forEach(s=>createShift(s));
 
-/* CREATE SHIFT */
+/* CALENDAR */
 
-function createShift(shift){
+function generateCalendar(){
 
-const div=document.createElement("div");
+calendarGrid.innerHTML="";
 
-div.className="shift";
+const year=currentMonth.getFullYear();
+const month=currentMonth.getMonth();
 
-div.innerHTML=`
+monthLabel.innerText=currentMonth.toLocaleString('default',{month:'long',year:'numeric'});
 
-<div class="shift-header">Shift ${shift}</div>
+const firstDay=new Date(year,month,1).getDay();
+const days=new Date(year,month+1,0).getDate();
+
+for(let i=0;i<firstDay;i++){
+calendarGrid.innerHTML+="<div></div>";
+}
+
+for(let d=1;d<=days;d++){
+
+const date=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+calendarGrid.innerHTML+=`
+
+<div class="date-card" onclick="selectDate('${date}')">
+
+<div class="date">${d}</div>
+
+<div class="small">Planned: --</div>
+<div class="small">Actual: --</div>
+
+</div>
+
+`;
+
+}
+
+}
+
+function prevMonth(){
+
+currentMonth.setMonth(currentMonth.getMonth()-1);
+generateCalendar();
+
+}
+
+function nextMonth(){
+
+currentMonth.setMonth(currentMonth.getMonth()+1);
+generateCalendar();
+
+}
+
+
+/* SELECT DATE */
+
+function selectDate(date){
+
+selectedDate=date;
+
+selectedDateLabel(date);
+
+clearTables();
+
+}
+
+function selectedDateLabel(date){
+
+document.getElementById("selectedDate").innerText=date;
+
+}
+
+
+/* SHIFT TABLES */
+
+function createShiftTables(){
+
+shiftContainer.innerHTML="";
+
+SHIFTS.forEach(s=>{
+
+shiftContainer.innerHTML+=`
+
+<div class="shift">
+
+<div class="shift-title">Shift ${s}</div>
 
 <table>
 
@@ -148,103 +337,115 @@ div.innerHTML=`
 </tr>
 </thead>
 
-<tbody id="table_${shift}"></tbody>
+<tbody id="table_${s}"></tbody>
 
 </table>
 
-<button class="addRow" onclick="addRow('${shift}')">+ Add Row</button>
+<button class="addRow" onclick="addRow('${s}')">+ Add Row</button>
 
-<div class="summary">
-Target: <span id="target_${shift}">0</span> Units
 </div>
 
 `;
 
-shiftsContainer.appendChild(div);
+});
 
 }
+
 
 /* ADD ROW */
 
 function addRow(shift){
 
-const tbody=document.getElementById(`table_${shift}`);
+const table=document.getElementById(`table_${shift}`);
 
 const row=document.createElement("tr");
 
+row.className="planRow";
+row.dataset.shift=shift;
+
 row.innerHTML=`
 
-<td><input></td>
-<td><input></td>
-<td><input></td>
-<td><input type="number" oninput="calcShift('${shift}')"></td>
-<td><button onclick="this.parentElement.parentElement.remove();calcShift('${shift}')">🗑</button></td>
+<td><input class="machine"></td>
+<td><input class="sku"></td>
+<td><input class="job"></td>
+<td><input class="qty" type="number" oninput="calcDaily()"></td>
+<td><button onclick="this.parentElement.parentElement.remove();calcDaily()">🗑</button></td>
 
 `;
 
-tbody.appendChild(row);
+table.appendChild(row);
 
 }
 
-/* CALCULATE SHIFT */
 
-function calcShift(shift){
+/* CLEAR TABLES */
+
+function clearTables(){
+
+SHIFTS.forEach(s=>{
+document.getElementById(`table_${s}`).innerHTML="";
+});
+
+calcDaily();
+
+}
+
+
+/* DAILY SUMMARY */
+
+function calcDaily(){
 
 let total=0;
+let machines=new Set();
+let skus=new Set();
 
-document.querySelectorAll(`#table_${shift} tr`).forEach(r=>{
+document.querySelectorAll(".planRow").forEach(r=>{
 
-const q=Number(r.children[3].querySelector("input").value);
+const m=r.querySelector(".machine").value;
+const s=r.querySelector(".sku").value;
+const q=Number(r.querySelector(".qty").value);
 
-total+=q;
+if(q) total+=q;
+if(m) machines.add(m);
+if(s) skus.add(s);
 
 });
 
-document.getElementById(`target_${shift}`).innerText=total;
+dailyUnits.innerText=total;
+dailyMachines.innerText=machines.size;
+dailySkus.innerText=skus.size;
 
 }
+
 
 /* SAVE PLAN */
 
 async function savePlan(){
 
-const date=document.getElementById("planDate").value;
+if(!selectedDate){
 
-if(!date){
-
-alert("Select date");
+alert("Select date from calendar");
 
 return;
 
 }
 
-let payload=[];
+const payload=[];
 
-SHIFTS.forEach(shift=>{
-
-document.querySelectorAll(`#table_${shift} tr`).forEach(r=>{
-
-const machine=r.children[0].querySelector("input").value;
-const sku=r.children[1].querySelector("input").value;
-const job=r.children[2].querySelector("input").value;
-const qty=Number(r.children[3].querySelector("input").value);
-
-if(!machine||!qty)return;
+document.querySelectorAll(".planRow").forEach(r=>{
 
 payload.push({
 
-ts:new Date(date).getTime(),
+ts:new Date(selectedDate).getTime(),
 
 values:{
-Plan_Date:date,
-Plan_Shift:shift,
-Plan_Machine:machine,
-Plan_SKU:sku,
-Plant_Job_Number:job,
-Plan_Quantity:qty
+Plan_Date:selectedDate,
+Plan_Shift:r.dataset.shift,
+Plan_Machine:r.querySelector(".machine").value,
+Plan_SKU:r.querySelector(".sku").value,
+Plant_Job_Number:r.querySelector(".job").value,
+Plan_Quantity:r.querySelector(".qty").value
 }
-
-});
 
 });
 
