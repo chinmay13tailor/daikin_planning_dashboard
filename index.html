@@ -34,14 +34,6 @@ align-items:center;
 margin-bottom:10px;
 }
 
-.month-header button{
-border:none;
-background:#e2e8f0;
-padding:6px 10px;
-border-radius:6px;
-cursor:pointer;
-}
-
 .calendar-grid{
 display:grid;
 grid-template-columns:repeat(7,1fr);
@@ -99,11 +91,6 @@ font-weight:600;
 table{
 width:100%;
 border-collapse:collapse;
-}
-
-th,td{
-padding:6px;
-font-size:12px;
 }
 
 input{
@@ -189,9 +176,15 @@ const SHIFTS=["A","B","C"];
 
 let currentMonth=new Date();
 let selectedDate=null;
+let monthlyData=[];
 
-generateCalendar();
+init();
+
+async function init(){
 createShiftTables();
+generateCalendar();
+await loadSelectedMonthData();
+}
 
 function generateCalendar(){
 
@@ -212,29 +205,103 @@ for(let d=1;d<=days;d++){
 const date=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
 calendarGrid.innerHTML+=`
-
 <div class="date-card" onclick="selectDate('${date}')">
 <div class="date">${d}</div>
 <div class="small">Planned: <span id="plan_${date}">--</span></div>
 </div>
-
 `;
 
 }
 
 }
 
-function prevMonth(){currentMonth.setMonth(currentMonth.getMonth()-1);generateCalendar();}
-function nextMonth(){currentMonth.setMonth(currentMonth.getMonth()+1);generateCalendar();}
+function prevMonth(){
+currentMonth.setMonth(currentMonth.getMonth()-1);
+init();
+}
 
-async function selectDate(date){
+function nextMonth(){
+currentMonth.setMonth(currentMonth.getMonth()+1);
+init();
+}
+
+async function loadSelectedMonthData(){
+
+const year=currentMonth.getFullYear();
+const month=currentMonth.getMonth();
+
+const start=new Date(year,month,1).getTime();
+const end=new Date(year,month+1,0,23,59,59).getTime();
+
+const url=`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries`
++`?keys=${KEYS.join(",")}&startTs=${start}&endTs=${end}&limit=5000&agg=NONE`;
+
+const res=await fetch(url,{headers:{"X-Authorization":"Bearer "+JWT}});
+const data=await res.json();
+
+const rows={};
+
+Object.entries(data).forEach(([key,arr])=>{
+(arr||[]).forEach(p=>{
+rows[p.ts]=rows[p.ts]||{ts:p.ts};
+rows[p.ts][key]=p.value;
+});
+});
+
+monthlyData=Object.values(rows);
+
+updateCalendar();
+
+}
+
+function updateCalendar(){
+
+const totals={};
+
+monthlyData.forEach(r=>{
+
+const d=r.Plan_Date;
+const q=Number(r.Plan_Quantity)||0;
+
+if(!totals[d]) totals[d]=0;
+totals[d]+=q;
+
+});
+
+Object.keys(totals).forEach(d=>{
+
+const el=document.getElementById(`plan_${d}`);
+
+if(el) el.innerText=totals[d];
+
+});
+
+}
+
+function selectDate(date){
 
 selectedDate=date;
-selectedDateLabel=date;
 document.getElementById("selectedDate").innerText=date;
 
 clearTables();
-await loadPlanForDate(date);
+
+const rows=monthlyData.filter(r=>r.Plan_Date===date);
+
+rows.forEach(r=>{
+
+addRow(r.Plan_Shift);
+
+const table=document.querySelector(`#table_${r.Plan_Shift}`);
+const row=table.lastElementChild;
+
+row.querySelector(".machine").value=r.Plan_Machine||"";
+row.querySelector(".sku").value=r.Plan_SKU||"";
+row.querySelector(".job").value=r.Plan_Job_Number||"";
+row.querySelector(".qty").value=r.Plan_Quantity||"";
+
+});
+
+calcDaily();
 
 }
 
@@ -247,7 +314,6 @@ SHIFTS.forEach(s=>{
 shiftContainer.innerHTML+=`
 
 <div class="shift">
-
 <div class="shift-title">Shift ${s}</div>
 
 <table>
@@ -295,10 +361,8 @@ table.appendChild(row);
 }
 
 function clearTables(){
-
 SHIFTS.forEach(s=>document.getElementById(`table_${s}`).innerHTML="");
 calcDaily();
-
 }
 
 function calcDaily(){
@@ -322,53 +386,6 @@ if(s) skus.add(s);
 dailyUnits.innerText=total;
 dailyMachines.innerText=machines.size;
 dailySkus.innerText=skus.size;
-
-}
-
-async function loadPlanForDate(date){
-
-const start=new Date(date+"T00:00:00").getTime();
-const end=new Date(date+"T23:59:59").getTime();
-
-const url=`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries`
-+`?keys=${KEYS.join(",")}&startTs=${start}&endTs=${end}&limit=100&agg=NONE`;
-
-const res=await fetch(url,{headers:{"X-Authorization":"Bearer "+JWT}});
-const data=await res.json();
-
-const rows={};
-
-Object.entries(data).forEach(([key,arr])=>{
-(arr||[]).forEach(p=>{
-rows[p.ts]=rows[p.ts]||{ts:p.ts};
-rows[p.ts][key]=p.value;
-});
-});
-
-const result=Object.values(rows);
-
-let plannedTotal=0;
-
-result.forEach(r=>{
-
-addRow(r.Plan_Shift);
-
-const table=document.querySelector(`#table_${r.Plan_Shift}`);
-const row=table.lastElementChild;
-
-row.querySelector(".machine").value=r.Plan_Machine||"";
-row.querySelector(".sku").value=r.Plan_SKU||"";
-row.querySelector(".job").value=r.Plan_Job_Number||"";
-row.querySelector(".qty").value=r.Plan_Quantity||"";
-
-plannedTotal+=Number(r.Plan_Quantity)||0;
-
-});
-
-calcDaily();
-
-const el=document.getElementById(`plan_${date}`);
-if(el) el.innerText=plannedTotal;
 
 }
 
@@ -425,7 +442,7 @@ body:JSON.stringify(payload)
 
 alert("Plan saved successfully");
 
-loadPlanForDate(selectedDate);
+await loadSelectedMonthData();
 
 }
 
