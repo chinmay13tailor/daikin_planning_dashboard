@@ -373,9 +373,12 @@ alert("Select a date first");
 return;
 }
 
-const API="https://plantwiz.pimateck.in/api/v1/diZQm2TuT8jedMFk4ElX/telemetry";
+const API="https://plantwiz.pimateck.in/api";
+const DEVICE_ID="c405dfd0-1ded-11f1-a7bb-af87c4a25aec";
+const JWT=new URLSearchParams(location.search).get("token")||"";
 
-let rows=[];
+let payload=[];
+let index=0;
 
 document.querySelectorAll(".planRow").forEach(r=>{
 
@@ -387,37 +390,43 @@ const shift=r.dataset.shift;
 
 if(machine && !isNaN(qty)){
 
-rows.push({
+payload.push({
+ts: Date.now()+index,
+values:{
 Plan_Date:selectedDate,
 Plan_Shift:shift,
 Plan_Machine:machine,
 Plan_SKU:sku,
-Plant_Job_Number:job,
+Plan_Job_Number:job,
 Plan_Quantity:qty
+}
 });
+
+index++;
 
 }
 
 });
 
-if(rows.length===0){
+if(payload.length===0){
 alert("No rows to save");
 return;
 }
 
-console.log("Sending rows:",rows);
+console.log("Payload sending:",payload);
 
-for(const r of rows){
+await fetch(`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/ANY`,{
 
-await fetch(API,{
 method:"POST",
+
 headers:{
+"X-Authorization":"Bearer "+JWT,
 "Content-Type":"application/json"
 },
-body:JSON.stringify(r)
-});
 
-}
+body:JSON.stringify(payload)
+
+});
 
 alert("Plan saved successfully");
 
