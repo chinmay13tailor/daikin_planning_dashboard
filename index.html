@@ -10,21 +10,22 @@ body{
 font-family:"Segoe UI",sans-serif;
 background:#f3f4f6;
 margin:0;
-padding:15px;
+padding:12px;
 }
 
 .container{
 display:flex;
 gap:16px;
+height:100vh;
 }
 
-/* CALENDAR */
+/* LEFT CALENDAR */
 
 .calendar{
 flex:2;
 background:#fff;
 border-radius:10px;
-padding:14px;
+padding:12px;
 box-shadow:0 2px 10px rgba(0,0,0,.08);
 }
 
@@ -57,6 +58,10 @@ cursor:pointer;
 border-left:4px solid #3b82f6;
 }
 
+.date-card:hover{
+background:#eef2ff;
+}
+
 .date{
 font-weight:600;
 font-size:13px;
@@ -67,35 +72,36 @@ font-size:11px;
 color:#64748b;
 }
 
-/* PLAN PANEL */
+/* RIGHT PANEL */
 
 .plan-panel{
 flex:1;
 background:#fff;
 border-radius:10px;
-padding:14px;
+padding:12px;
 box-shadow:0 2px 10px rgba(0,0,0,.08);
+overflow:auto;
 }
 
 .plan-header{
 display:flex;
 justify-content:space-between;
-margin-bottom:10px;
+margin-bottom:12px;
 }
 
 .summary{
+display:flex;
+justify-content:space-between;
 background:#eef2ff;
 padding:10px;
 border-radius:8px;
-display:flex;
-justify-content:space-between;
-margin-bottom:14px;
+margin-bottom:12px;
 }
 
 .shift{
 border:1px solid #e2e8f0;
 border-radius:8px;
-margin-bottom:12px;
+margin-bottom:10px;
 }
 
 .shift-title{
@@ -123,20 +129,22 @@ width:100%;
 padding:4px;
 border:1px solid #cbd5e1;
 border-radius:6px;
+font-size:12px;
 }
 
 .addRow{
-margin:8px;
+margin:6px;
 padding:6px;
 background:#e2e8f0;
 border:none;
 border-radius:6px;
 cursor:pointer;
+font-size:12px;
 }
 
 .saveBtn{
 width:100%;
-padding:8px;
+padding:10px;
 background:#2563eb;
 border:none;
 border-radius:8px;
@@ -146,24 +154,19 @@ cursor:pointer;
 }
 
 </style>
+
 </head>
 
 <body>
 
 <div class="container">
 
-<!-- CALENDAR -->
-
 <div class="calendar">
 
 <div class="month-header">
-
 <button onclick="prevMonth()">◀</button>
-
 <span id="monthLabel"></span>
-
 <button onclick="nextMonth()">▶</button>
-
 </div>
 
 <div id="calendarGrid" class="calendar-grid"></div>
@@ -171,13 +174,11 @@ cursor:pointer;
 </div>
 
 
-<!-- PLANNING PANEL -->
-
 <div class="plan-panel">
 
 <div class="plan-header">
 <h3>Production Plan</h3>
-<span id="selectedDate"></span>
+<span id="selectedDate">Select Date</span>
 </div>
 
 <div class="summary">
@@ -207,15 +208,12 @@ SKUs<br>
 
 </div>
 
-
 <script>
 
 /* CONFIG */
 
 const API="https://plantwiz.pimateck.in/api";
-
 const DEVICE_ID="c405dfd0-1ded-11f1-a7bb-af87c4a25aec";
-
 const JWT=new URLSearchParams(location.search).get("token")||"";
 
 const SHIFTS=["A","B","C"];
@@ -255,11 +253,9 @@ const date=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0
 calendarGrid.innerHTML+=`
 
 <div class="date-card" onclick="selectDate('${date}')">
-
 <div class="date">${d}</div>
 <div class="small">Planned: --</div>
 <div class="small">Actual: --</div>
-
 </div>
 
 `;
@@ -269,17 +265,13 @@ calendarGrid.innerHTML+=`
 }
 
 function prevMonth(){
-
 currentMonth.setMonth(currentMonth.getMonth()-1);
 generateCalendar();
-
 }
 
 function nextMonth(){
-
 currentMonth.setMonth(currentMonth.getMonth()+1);
 generateCalendar();
-
 }
 
 
@@ -288,9 +280,7 @@ generateCalendar();
 function selectDate(date){
 
 selectedDate=date;
-
 document.getElementById("selectedDate").innerText=date;
-
 clearTables();
 
 }
@@ -344,7 +334,6 @@ function addRow(shift){
 const table=document.getElementById(`table_${shift}`);
 
 const row=document.createElement("tr");
-
 row.className="planRow";
 row.dataset.shift=shift;
 
@@ -408,14 +397,12 @@ dailySkus.innerText=skus.size;
 async function savePlan(){
 
 if(!selectedDate){
-
-alert("Select a date from calendar first");
-
+alert("Select a date first");
 return;
-
 }
 
 let payload=[];
+let i=0;
 
 document.querySelectorAll(".planRow").forEach(r=>{
 
@@ -429,7 +416,7 @@ if(!machine || !qty) return;
 
 payload.push({
 
-ts:new Date(selectedDate).getTime(),
+ts: Date.now()+i,
 
 values:{
 Plan_Date:selectedDate,
@@ -442,16 +429,15 @@ Plan_Quantity:qty
 
 });
 
+i++;
+
 });
 
-console.log("Telemetry Payload:",payload);
+console.log(payload);
 
 if(payload.length===0){
-
 alert("No data to save");
-
 return;
-
 }
 
 await fetch(`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/ANY`,{
