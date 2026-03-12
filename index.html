@@ -151,7 +151,11 @@ cursor:pointer;
 
 <div id="shiftContainer"></div>
 
+<div style="display:flex;gap:8px;margin-top:10px">
+<button class="addRow" onclick="enableAddMode()">Add Plan</button>
+<button class="addRow" onclick="enableUpdateMode()">Update Plan</button>
 <button class="saveBtn" onclick="savePlan()">Save Plan</button>
+</div>
 
 </div>
 
@@ -174,6 +178,7 @@ const KEYS=[
 
 const SHIFTS=["A","B","C"];
 
+let plannerMode="view";
 let currentMonth=new Date();
 let selectedDate=null;
 let monthlyData=[];
@@ -227,11 +232,8 @@ init();
 
 async function loadSelectedMonthData(){
 
-const year=currentMonth.getFullYear();
-const month=currentMonth.getMonth();
-
-const start=new Date(year,month,1).getTime();
-const end=new Date(year,month+1,0,23,59,59).getTime();
+const start=new Date(currentMonth.getFullYear(),currentMonth.getMonth(),1).getTime();
+const end=new Date(currentMonth.getFullYear(),currentMonth.getMonth()+1,0,23,59,59).getTime();
 
 const url=`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries`
 +`?keys=${KEYS.join(",")}&startTs=${start}&endTs=${end}&limit=5000&agg=NONE`;
@@ -289,7 +291,7 @@ const rows=monthlyData.filter(r=>r.Plan_Date===date);
 
 rows.forEach(r=>{
 
-addRow(r.Plan_Shift);
+addRow(r.Plan_Shift,r.ts);
 
 const table=document.querySelector(`#table_${r.Plan_Shift}`);
 const row=table.lastElementChild;
@@ -298,6 +300,8 @@ row.querySelector(".machine").value=r.Plan_Machine||"";
 row.querySelector(".sku").value=r.Plan_SKU||"";
 row.querySelector(".job").value=r.Plan_Job_Number||"";
 row.querySelector(".qty").value=r.Plan_Quantity||"";
+
+row.querySelectorAll("input").forEach(i=>i.disabled=true);
 
 });
 
@@ -314,6 +318,7 @@ SHIFTS.forEach(s=>{
 shiftContainer.innerHTML+=`
 
 <div class="shift">
+
 <div class="shift-title">Shift ${s}</div>
 
 <table>
@@ -330,7 +335,7 @@ shiftContainer.innerHTML+=`
 <tbody id="table_${s}"></tbody>
 </table>
 
-<button class="addRow" onclick="addRow('${s}')">+ Add Row</button>
+<button class="addRow addBtn" onclick="addRow('${s}')">+ Add Row</button>
 
 </div>
 
@@ -340,13 +345,16 @@ shiftContainer.innerHTML+=`
 
 }
 
-function addRow(shift){
+function addRow(shift,ts=null){
+
+if(plannerMode==="update") return;
 
 const table=document.getElementById(`table_${shift}`);
 
 const row=document.createElement("tr");
 row.className="planRow";
 row.dataset.shift=shift;
+row.dataset.ts=ts||"";
 
 row.innerHTML=`
 <td><input class="machine"></td>
@@ -357,6 +365,26 @@ row.innerHTML=`
 `;
 
 table.appendChild(row);
+
+}
+
+function enableAddMode(){
+
+plannerMode="add";
+
+document.querySelectorAll(".planRow input").forEach(i=>i.disabled=true);
+
+document.querySelectorAll(".addBtn").forEach(b=>b.disabled=false);
+
+}
+
+function enableUpdateMode(){
+
+plannerMode="update";
+
+document.querySelectorAll(".planRow input").forEach(i=>i.disabled=false);
+
+document.querySelectorAll(".addBtn").forEach(b=>b.disabled=true);
 
 }
 
@@ -392,12 +420,11 @@ dailySkus.innerText=skus.size;
 async function savePlan(){
 
 if(!selectedDate){
-alert("Select a date first");
+alert("Select date first");
 return;
 }
 
 let payload=[];
-let index=0;
 
 document.querySelectorAll(".planRow").forEach(r=>{
 
@@ -409,8 +436,14 @@ const shift=r.dataset.shift;
 
 if(machine && !isNaN(qty)){
 
+let ts=r.dataset.ts;
+
+if(plannerMode==="add" || !ts){
+ts=Date.now()+Math.floor(Math.random()*1000);
+}
+
 payload.push({
-ts:Date.now()+index,
+ts:Number(ts),
 values:{
 Plan_Date:selectedDate,
 Plan_Shift:shift,
@@ -420,8 +453,6 @@ Plan_Job_Number:job,
 Plan_Quantity:qty
 }
 });
-
-index++;
 
 }
 
