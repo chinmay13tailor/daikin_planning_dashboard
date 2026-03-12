@@ -19,7 +19,7 @@ gap:16px;
 height:100vh;
 }
 
-/* LEFT CALENDAR */
+/* CALENDAR */
 
 .calendar{
 flex:2;
@@ -58,10 +58,6 @@ cursor:pointer;
 border-left:4px solid #3b82f6;
 }
 
-.date-card:hover{
-background:#eef2ff;
-}
-
 .date{
 font-weight:600;
 font-size:13px;
@@ -72,7 +68,7 @@ font-size:11px;
 color:#64748b;
 }
 
-/* RIGHT PANEL */
+/* PLAN PANEL */
 
 .plan-panel{
 flex:1;
@@ -154,7 +150,6 @@ cursor:pointer;
 }
 
 </style>
-
 </head>
 
 <body>
@@ -172,7 +167,6 @@ cursor:pointer;
 <div id="calendarGrid" class="calendar-grid"></div>
 
 </div>
-
 
 <div class="plan-panel">
 
@@ -210,23 +204,17 @@ SKUs<br>
 
 <script>
 
-/* CONFIG */
+const DEVICE_TOKEN="diZQm2TuT8jedMFk4ElX";
 
-const API="https://plantwiz.pimateck.in/api";
-const DEVICE_ID="diZQm2TuT8jedMFk4ElX";
-const JWT=new URLSearchParams(location.search).get("token")||"";
+const API=`https://plantwiz.pimateck.in/api/v1/${DEVICE_TOKEN}/telemetry`;
 
 const SHIFTS=["A","B","C"];
 
 let currentMonth=new Date();
 let selectedDate=null;
 
-
-/* INIT */
-
 generateCalendar();
 createShiftTables();
-
 
 /* CALENDAR */
 
@@ -274,19 +262,15 @@ currentMonth.setMonth(currentMonth.getMonth()+1);
 generateCalendar();
 }
 
-
 /* SELECT DATE */
 
 function selectDate(date){
-
 selectedDate=date;
 document.getElementById("selectedDate").innerText=date;
 clearTables();
-
 }
 
-
-/* CREATE SHIFT TABLES */
+/* SHIFT TABLES */
 
 function createShiftTables(){
 
@@ -301,7 +285,6 @@ shiftContainer.innerHTML+=`
 <div class="shift-title">Shift ${s}</div>
 
 <table>
-
 <thead>
 <tr>
 <th>Machine</th>
@@ -313,7 +296,6 @@ shiftContainer.innerHTML+=`
 </thead>
 
 <tbody id="table_${s}"></tbody>
-
 </table>
 
 <button class="addRow" onclick="addRow('${s}')">+ Add Row</button>
@@ -326,9 +308,6 @@ shiftContainer.innerHTML+=`
 
 }
 
-
-/* ADD ROW */
-
 function addRow(shift){
 
 const table=document.getElementById(`table_${shift}`);
@@ -338,21 +317,16 @@ row.className="planRow";
 row.dataset.shift=shift;
 
 row.innerHTML=`
-
 <td><input class="machine"></td>
 <td><input class="sku"></td>
 <td><input class="job"></td>
 <td><input class="qty" type="number" oninput="calcDaily()"></td>
 <td><button onclick="this.parentElement.parentElement.remove();calcDaily()">🗑</button></td>
-
 `;
 
 table.appendChild(row);
 
 }
-
-
-/* CLEAR TABLES */
 
 function clearTables(){
 
@@ -363,7 +337,6 @@ document.getElementById(`table_${s}`).innerHTML="";
 calcDaily();
 
 }
-
 
 /* DAILY SUMMARY */
 
@@ -391,7 +364,6 @@ dailySkus.innerText=skus.size;
 
 }
 
-
 /* SAVE PLAN */
 
 async function savePlan(){
@@ -401,62 +373,51 @@ alert("Select a date first");
 return;
 }
 
-let payload=[];
-let index=0;
-
+let rows=[];
 document.querySelectorAll(".planRow").forEach(r=>{
 
 const machine=r.querySelector(".machine").value.trim();
 const sku=r.querySelector(".sku").value.trim();
 const job=r.querySelector(".job").value.trim();
 const qty=parseFloat(r.querySelector(".qty").value);
-
 const shift=r.dataset.shift;
 
-if(machine==="" || isNaN(qty)) return;
+if(machine && !isNaN(qty)){
 
-payload.push({
+rows.push({
+Plan_Date:selectedDate,
+Plan_Shift:shift,
+Plan_Machine:machine,
+Plan_SKU:sku,
+Plant_Job_Number:job,
+Plan_Quantity:qty
+});
 
-ts: Date.now() + index,
-
-values:{
-Plan_Date: String(selectedDate),
-Plan_Shift: String(shift),
-Plan_Machine: String(machine),
-Plan_SKU: String(sku),
-Plant_Job_Number: String(job),
-Plan_Quantity: Number(qty)
 }
 
 });
 
-index++;
-
-});
-
-console.log("Payload sending:",payload);
-
-if(payload.length===0){
-alert("No data to save");
+if(rows.length===0){
+alert("No rows to save");
 return;
 }
 
-await fetch(`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/ANY`,{
+console.log("Sending rows:",rows);
 
+for(const r of rows){
+
+await fetch(API,{
 method:"POST",
-
-headers:{
-"X-Authorization":"Bearer "+JWT,
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify(payload)
-
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify(r)
 });
+
+}
 
 alert("Plan saved successfully");
 
 }
+
 </script>
 
 </body>
