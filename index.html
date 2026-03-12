@@ -18,7 +18,7 @@ display:flex;
 gap:16px;
 }
 
-/* LEFT CALENDAR */
+/* CALENDAR */
 
 .calendar{
 flex:2;
@@ -57,10 +57,6 @@ cursor:pointer;
 border-left:4px solid #3b82f6;
 }
 
-.date-card:hover{
-background:#eef2ff;
-}
-
 .date{
 font-weight:600;
 font-size:13px;
@@ -71,7 +67,7 @@ font-size:11px;
 color:#64748b;
 }
 
-/* RIGHT PANEL */
+/* PLAN PANEL */
 
 .plan-panel{
 flex:1;
@@ -84,18 +80,16 @@ box-shadow:0 2px 10px rgba(0,0,0,.08);
 .plan-header{
 display:flex;
 justify-content:space-between;
-align-items:center;
-margin-bottom:12px;
+margin-bottom:10px;
 }
 
 .summary{
 background:#eef2ff;
-border-radius:8px;
 padding:10px;
+border-radius:8px;
 display:flex;
 justify-content:space-between;
 margin-bottom:14px;
-font-size:13px;
 }
 
 .shift{
@@ -105,9 +99,9 @@ margin-bottom:12px;
 }
 
 .shift-title{
+background:#f1f5f9;
 padding:8px;
 font-weight:600;
-background:#f1f5f9;
 }
 
 table{
@@ -126,10 +120,9 @@ background:#f8fafc;
 
 input{
 width:100%;
+padding:4px;
 border:1px solid #cbd5e1;
 border-radius:6px;
-padding:4px;
-font-size:12px;
 }
 
 .addRow{
@@ -139,17 +132,15 @@ background:#e2e8f0;
 border:none;
 border-radius:6px;
 cursor:pointer;
-font-size:12px;
 }
 
 .saveBtn{
-margin-top:10px;
 width:100%;
 padding:8px;
 background:#2563eb;
 border:none;
 border-radius:8px;
-color:#fff;
+color:white;
 font-weight:600;
 cursor:pointer;
 }
@@ -161,7 +152,7 @@ cursor:pointer;
 
 <div class="container">
 
-<!-- LEFT CALENDAR -->
+<!-- CALENDAR -->
 
 <div class="calendar">
 
@@ -180,7 +171,7 @@ cursor:pointer;
 </div>
 
 
-<!-- RIGHT PLANNING PANEL -->
+<!-- PLANNING PANEL -->
 
 <div class="plan-panel">
 
@@ -215,6 +206,7 @@ SKUs<br>
 </div>
 
 </div>
+
 
 <script>
 
@@ -265,7 +257,6 @@ calendarGrid.innerHTML+=`
 <div class="date-card" onclick="selectDate('${date}')">
 
 <div class="date">${d}</div>
-
 <div class="small">Planned: --</div>
 <div class="small">Actual: --</div>
 
@@ -298,20 +289,14 @@ function selectDate(date){
 
 selectedDate=date;
 
-selectedDateLabel(date);
+document.getElementById("selectedDate").innerText=date;
 
 clearTables();
 
 }
 
-function selectedDateLabel(date){
 
-document.getElementById("selectedDate").innerText=date;
-
-}
-
-
-/* SHIFT TABLES */
+/* CREATE SHIFT TABLES */
 
 function createShiftTables(){
 
@@ -424,15 +409,23 @@ async function savePlan(){
 
 if(!selectedDate){
 
-alert("Select date from calendar");
+alert("Select a date from calendar first");
 
 return;
 
 }
 
-const payload=[];
+let payload=[];
 
 document.querySelectorAll(".planRow").forEach(r=>{
+
+const machine=r.querySelector(".machine").value;
+const sku=r.querySelector(".sku").value;
+const job=r.querySelector(".job").value;
+const qty=Number(r.querySelector(".qty").value);
+const shift=r.dataset.shift;
+
+if(!machine || !qty) return;
 
 payload.push({
 
@@ -440,16 +433,18 @@ ts:new Date(selectedDate).getTime(),
 
 values:{
 Plan_Date:selectedDate,
-Plan_Shift:r.dataset.shift,
-Plan_Machine:r.querySelector(".machine").value,
-Plan_SKU:r.querySelector(".sku").value,
-Plant_Job_Number:r.querySelector(".job").value,
-Plan_Quantity:r.querySelector(".qty").value
+Plan_Shift:shift,
+Plan_Machine:machine,
+Plan_SKU:sku,
+Plant_Job_Number:job,
+Plan_Quantity:qty
 }
 
 });
 
 });
+
+console.log("Telemetry Payload:",payload);
 
 if(payload.length===0){
 
