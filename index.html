@@ -482,13 +482,19 @@ return;
 
 /* DELETE */
 
+/* DELETE TELEMETRY */
+
 for(const ts of deletedRows){
 
-await fetch(`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/delete?startTs=${ts}&endTs=${ts}&rewriteLatestIfDeleted=true`,
+await fetch(
+`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/delete?startTs=${ts}&endTs=${ts}&keys=Plan_Date,Plan_Shift,Plan_Machine,Plan_SKU,Plan_Job_Number,Plan_Quantity&rewriteLatestIfDeleted=true`,
 {
 method:"DELETE",
-headers:{"X-Authorization":"Bearer "+JWT}
-});
+headers:{
+"X-Authorization":"Bearer "+JWT
+}
+}
+);
 
 }
 
