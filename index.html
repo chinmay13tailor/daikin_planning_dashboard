@@ -430,12 +430,12 @@ if(!confirmDelete) return;
 
 const row=btn.parentElement.parentElement;
 
-const ts=row.dataset.ts;
+const ts = Number(row.dataset.ts);
+console.log("Marked for deletion:", ts);
 
 if(ts){
 deletedRows.push(ts);
 }
-
 row.remove();
 
 calcDaily();
@@ -478,10 +478,14 @@ return;
 
 /* DELETE TELEMETRY */
 
+/* DELETE TELEMETRY */
+
 for(const ts of deletedRows){
 
+console.log("Deleting ts:", ts);
+
 await fetch(
-`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/delete?startTs=${ts}&endTs=${ts}&keys=Plan_Date,Plan_Shift,Plan_Machine,Plan_SKU,Plan_Job_Number,Plan_Quantity&rewriteLatestIfDeleted=true`,
+`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/delete?keys=Plan_Date,Plan_Shift,Plan_Machine,Plan_SKU,Plan_Job_Number,Plan_Quantity&startTs=${ts}&endTs=${ts}&rewriteLatestIfDeleted=true`,
 {
 method:"DELETE",
 headers:{
