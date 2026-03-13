@@ -296,6 +296,50 @@ cursor:pointer;
 .saveBtn:hover{
 box-shadow:0 6px 16px rgba(37,99,235,.4);
 }
+
+  /* VIEW TOGGLE */
+
+.view-toggle{
+display:flex;
+gap:10px;
+margin-bottom:10px;
+}
+
+.view-toggle button{
+border:none;
+background:#e2e8f0;
+padding:8px 14px;
+border-radius:8px;
+cursor:pointer;
+font-size:13px;
+}
+
+.view-toggle button.active{
+background:#2563eb;
+color:white;
+}
+
+/* WEEK VIEW */
+
+.week-card{
+background:white;
+border-radius:10px;
+border:1px solid #e5e7eb;
+padding:12px;
+margin-bottom:10px;
+}
+
+.week-title{
+font-weight:600;
+margin-bottom:6px;
+}
+
+.week-grid{
+display:grid;
+grid-template-columns:1fr 1fr 1fr;
+gap:10px;
+font-size:13px;
+}
 </style>
 </head>
 
@@ -303,7 +347,10 @@ box-shadow:0 6px 16px rgba(37,99,235,.4);
 <div class="container">
 
 <div class="calendar">
-
+<div class="view-toggle">
+<button id="calendarViewBtn" class="active" onclick="showCalendarView()">Calendar View</button>
+<button id="weekViewBtn" onclick="showWeekView()">Week View</button>
+</div>
 <div class="month-header">
 <button onclick="prevMonth()">◀</button>
 <span id="monthLabel"></span>
@@ -320,7 +367,13 @@ box-shadow:0 6px 16px rgba(37,99,235,.4);
 <div>Sat</div>
 </div>
 
+<div id="calendarView">
+
 <div id="calendarGrid" class="calendar-grid"></div>
+
+</div>
+
+<div id="weekView" style="display:none"></div>
 
 </div>
 
@@ -770,6 +823,107 @@ alert("Plan saved successfully");
 await loadMonthData();
 
 selectDate(selectedDate);
+
+}
+
+  function showCalendarView(){
+
+document.getElementById("calendarView").style.display="block"
+document.getElementById("weekView").style.display="none"
+
+calendarViewBtn.classList.add("active")
+weekViewBtn.classList.remove("active")
+
+}
+
+function showWeekView(){
+
+document.getElementById("calendarView").style.display="none"
+document.getElementById("weekView").style.display="block"
+
+calendarViewBtn.classList.remove("active")
+weekViewBtn.classList.add("active")
+
+renderWeekView()
+
+}
+
+function renderWeekView(){
+
+const container=document.getElementById("weekView")
+container.innerHTML=""
+
+const year=currentMonth.getFullYear()
+const month=currentMonth.getMonth()
+
+const days=new Date(year,month+1,0).getDate()
+
+const weeks=Math.ceil(days/7)
+
+for(let w=1;w<=weeks;w++){
+
+let start=(w-1)*7+1
+let end=Math.min(w*7,days)
+
+let total=0
+let sku={}
+let machine={}
+
+monthlyData.forEach(r=>{
+
+const d=new Date(r.Plan_Date).getDate()
+
+if(d>=start && d<=end){
+
+const qty=Number(r.Plan_Quantity)||0
+
+total+=qty
+
+if(!sku[r.Plan_SKU]) sku[r.Plan_SKU]=0
+if(!machine[r.Plan_Machine]) machine[r.Plan_Machine]=0
+
+sku[r.Plan_SKU]+=qty
+machine[r.Plan_Machine]+=qty
+
+}
+
+})
+
+const skuText=Object.entries(sku).map(([k,v])=>`${k}: ${v}`).join(", ") || "No Data"
+const machineText=Object.entries(machine).map(([k,v])=>`${k}: ${v}`).join(", ") || "No Data"
+
+container.innerHTML+=`
+
+<div class="week-card">
+
+<div class="week-title">
+Week ${w} (${start}-${end})
+</div>
+
+<div class="week-grid">
+
+<div>
+<b>Total Planned</b><br>
+${total}
+</div>
+
+<div>
+<b>SKU Wise</b><br>
+${skuText}
+</div>
+
+<div>
+<b>Machine Wise</b><br>
+${machineText}
+</div>
+
+</div>
+
+</div>
+
+`
+
+}
 
 }
 
