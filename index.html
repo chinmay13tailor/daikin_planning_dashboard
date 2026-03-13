@@ -143,15 +143,23 @@ gap:8px;
 
 transition:all .2s ease;
 }
-.plan-panel{
-flex:1.3;
-background:#f5f6f8;
-border-radius:14px;
-overflow-y:auto;        /* enables vertical scroll */
-overflow-x:hidden;
+.plan-header{
+position:sticky;
+top:0;
+z-index:10;
+
+background:#165da8;
+color:white;
+padding:18px;
+
 display:flex;
-flex-direction:column;
-height:100%;
+justify-content:space-between;
+align-items:center;
+}
+  .plan-content{
+flex:1;
+overflow-y:auto;
+padding-bottom:10px;
 }
   /* Smooth Scrollbar */
 
@@ -377,7 +385,7 @@ box-shadow:0 6px 16px rgba(37,99,235,.4);
 </div>
 <div class="plan-close">✕</div>
 </div>
-
+<div class="plan-content">
 <div class="daily-card">
 
 <div class="daily-title">Daily Production Planning</div>
@@ -414,7 +422,7 @@ box-shadow:0 6px 16px rgba(37,99,235,.4);
 <button id="savePlanBtn" class="saveBtn" onclick="savePlan()">Save Plan</button>
 
 </div>
-
+</div>
 </div>
 
 </div>
