@@ -13,112 +13,203 @@ margin:0;
 padding:12px;
 }
 
+/* MAIN LAYOUT */
+
 .container{
 display:flex;
-gap:16px;
+gap:18px;
 height:100vh;
 }
 
+/* CALENDAR PANEL */
+
 .calendar{
-flex:2;
-background:#fff;
-border-radius:10px;
-padding:12px;
-box-shadow:0 2px 10px rgba(0,0,0,.08);
+flex:2.3;
+background:#ffffff;
+border-radius:14px;
+padding:16px;
+box-shadow:0 6px 18px rgba(0,0,0,.08);
+display:flex;
+flex-direction:column;
 }
+
+/* MONTH HEADER */
 
 .month-header{
 display:flex;
 justify-content:space-between;
 align-items:center;
-margin-bottom:10px;
+margin-bottom:16px;
+font-size:16px;
+font-weight:600;
+color:#1e293b;
 }
+
+.month-header button{
+border:none;
+background:#f1f5f9;
+padding:6px 12px;
+border-radius:6px;
+cursor:pointer;
+transition:.2s;
+}
+
+.month-header button:hover{
+background:#e2e8f0;
+}
+
+/* CALENDAR GRID */
 
 .calendar-grid{
 display:grid;
 grid-template-columns:repeat(7,1fr);
-gap:8px;
+gap:12px;
+flex:1;
 }
+
+/* DAY CARD */
 
 .date-card{
 background:#f8fafc;
-border-radius:8px;
-padding:8px;
+border-radius:12px;
+padding:12px;
 cursor:pointer;
-border-left:4px solid #3b82f6;
+border-left:5px solid #3b82f6;
+transition:all .2s ease;
+min-height:75px;
+display:flex;
+flex-direction:column;
+justify-content:space-between;
 }
+
+.date-card:hover{
+transform:translateY(-3px);
+box-shadow:0 6px 14px rgba(0,0,0,.08);
+background:#ffffff;
+}
+
+/* DATE TEXT */
 
 .date{
 font-weight:600;
-font-size:13px;
+font-size:14px;
+color:#0f172a;
 }
 
 .small{
-font-size:11px;
+font-size:12px;
 color:#64748b;
 }
 
+/* RIGHT PANEL */
+
 .plan-panel{
-flex:1;
-background:#fff;
-border-radius:10px;
-padding:12px;
-box-shadow:0 2px 10px rgba(0,0,0,.08);
+flex:1.2;
+background:#ffffff;
+border-radius:14px;
+padding:16px;
+box-shadow:0 6px 18px rgba(0,0,0,.08);
 overflow:auto;
 }
+
+/* SUMMARY BOX */
 
 .summary{
 display:flex;
 justify-content:space-between;
-background:#eef2ff;
-padding:10px;
-border-radius:8px;
-margin-bottom:12px;
+background:#f1f5ff;
+padding:12px;
+border-radius:10px;
+margin-bottom:14px;
+font-size:13px;
+color:#1e293b;
 }
+
+/* SHIFT CARD */
 
 .shift{
-border:1px solid #e2e8f0;
-border-radius:8px;
-margin-bottom:10px;
+border:1px solid #e5e7eb;
+border-radius:10px;
+margin-bottom:14px;
+overflow:hidden;
+background:white;
 }
 
+/* SHIFT HEADER */
+
 .shift-title{
-background:#f1f5f9;
-padding:8px;
+background:#f8fafc;
+padding:10px;
 font-weight:600;
+color:#1e293b;
+border-bottom:1px solid #e5e7eb;
 }
+
+/* TABLE */
 
 table{
 width:100%;
 border-collapse:collapse;
 }
 
+table th{
+background:#f9fafb;
+font-size:12px;
+padding:8px;
+text-align:left;
+}
+
+table td{
+padding:6px;
+}
+
+/* INPUT */
+
 input{
 width:100%;
-padding:4px;
+padding:6px;
 border:1px solid #cbd5e1;
 border-radius:6px;
+font-size:12px;
 }
+
+/* ADD ROW BUTTON */
 
 .addRow{
 margin:6px;
-padding:6px;
-background:#e2e8f0;
+padding:6px 10px;
+background:#f1f5f9;
 border:none;
 border-radius:6px;
 cursor:pointer;
+font-size:12px;
+transition:.2s;
 }
+
+.addRow:hover{
+background:#e2e8f0;
+}
+
+/* SAVE BUTTON */
 
 .saveBtn{
 width:100%;
-padding:10px;
-background:#2563eb;
+padding:12px;
+background:linear-gradient(135deg,#2563eb,#1d4ed8);
 border:none;
-border-radius:8px;
+border-radius:10px;
 color:white;
 font-weight:600;
 cursor:pointer;
+transition:.2s;
 }
+
+.saveBtn:hover{
+transform:translateY(-1px);
+box-shadow:0 6px 12px rgba(37,99,235,.3);
+}
+
+/* DELETE BUTTON */
 
 .deleteBtn{
 background:#ef4444;
@@ -127,13 +218,17 @@ border:none;
 padding:4px 6px;
 border-radius:4px;
 cursor:pointer;
+transition:.2s;
+}
+
+.deleteBtn:hover{
+background:#dc2626;
 }
 
 </style>
 </head>
 
 <body>
-
 <div class="container">
 
 <div class="calendar">
