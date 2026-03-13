@@ -24,7 +24,7 @@ height:calc(100vh - 20px);
 /* CALENDAR PANEL */
 
 .calendar{
-flex:2.6;
+flex:0 0 70%;
 background:white;
 border-radius:14px;
 padding:18px;
@@ -156,26 +156,35 @@ display:flex;
 justify-content:space-between;
 align-items:center;
 }
-  .plan-content{
+.plan-content{
 flex:1;
 overflow-y:auto;
 padding-bottom:10px;
+padding-right:6px;
 }
   /* Smooth Scrollbar */
 
-.plan-panel::-webkit-scrollbar{
+.plan-content::-webkit-scrollbar{
 width:8px;
 }
 
-.plan-panel::-webkit-scrollbar-thumb{
+.plan-content::-webkit-scrollbar-thumb{
 background:#cbd5e1;
 border-radius:6px;
 }
 
-.plan-panel::-webkit-scrollbar-track{
+.plan-content::-webkit-scrollbar-track{
 background:transparent;
 }
-
+.plan-panel{
+flex:0 0 35%;
+background:#f5f6f8;
+border-radius:14px;
+display:flex;
+flex-direction:column;
+overflow:hidden;
+height:100%;
+}
 /* HEADER */
 
 .plan-header{
