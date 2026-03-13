@@ -428,7 +428,7 @@ font-size:13px;
 </div>
 
 <script>
-
+let currentView = "calendar";
 const API="https://plantwiz.pimateck.in/api";
 const DEVICE_ID="c405dfd0-1ded-11f1-a7bb-af87c4a25aec";
 const JWT=new URLSearchParams(location.search).get("token")||"";
@@ -515,6 +515,10 @@ rows[p.ts][key]=p.value;
 monthlyData=Object.values(rows);
 
 updateCalendar();
+
+if(currentView === "week"){
+renderWeekView();
+}
 
 }
 
@@ -826,25 +830,29 @@ selectDate(selectedDate);
 
 }
 
-  function showCalendarView(){
+function showCalendarView(){
 
-document.getElementById("calendarView").style.display="block"
-document.getElementById("weekView").style.display="none"
+currentView = "calendar";
 
-calendarViewBtn.classList.add("active")
-weekViewBtn.classList.remove("active")
+document.getElementById("calendarView").style.display="block";
+document.getElementById("weekView").style.display="none";
+
+calendarViewBtn.classList.add("active");
+weekViewBtn.classList.remove("active");
 
 }
 
 function showWeekView(){
 
-document.getElementById("calendarView").style.display="none"
-document.getElementById("weekView").style.display="block"
+currentView = "week";
 
-calendarViewBtn.classList.remove("active")
-weekViewBtn.classList.add("active")
+document.getElementById("calendarView").style.display="none";
+document.getElementById("weekView").style.display="block";
 
-renderWeekView()
+calendarViewBtn.classList.remove("active");
+weekViewBtn.classList.add("active");
+
+renderWeekView();
 
 }
 
