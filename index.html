@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <head>
 <meta charset="UTF-8">
 <title>Production Planning</title>
@@ -520,6 +521,57 @@ monthlyData=Object.values(rows);
 updateCalendar();
 
 if(currentView === "week"){
+  function calculateProgress(planned,target){
+
+if(target===0) return 0
+
+return Math.round((planned/target)*100)
+
+}
+
+function getRemaining(target,planned){
+
+return Math.max(target-planned,0)
+
+}
+
+function getDailyStats(rows){
+
+const days=[0,0,0,0,0,0,0]
+
+rows.forEach(r=>{
+
+const d=new Date(r.Plan_Date).getDay()
+
+days[d]+=Number(r.Plan_Quantity)||0
+
+})
+
+return days
+
+}
+
+function generateRecommendation(planned,target,skuStats){
+
+let remaining=target-planned
+
+if(remaining<=0){
+return "Weekly production target achieved."
+}
+
+let worstSKU=null
+let min=Infinity
+
+Object.entries(skuStats).forEach(([k,v])=>{
+if(v<min){
+min=v
+worstSKU=k
+}
+})
+
+return `${remaining} units still pending. Focus on SKU ${worstSKU} next week.`
+
+}
 renderWeekView();
 }
 
@@ -887,11 +939,16 @@ const days=new Date(year,month+1,0).getDate()
 
 const weeks=Math.ceil(days/7)
 
+/* assume monthly target example */
+const monthlyTarget=300000
+const weeklyTarget=Math.round(monthlyTarget/weeks)
+
 for(let w=1;w<=weeks;w++){
 
 let start=(w-1)*7+1
 let end=Math.min(w*7,days)
 
+let rows=[]
 let total=0
 let sku={}
 let machine={}
@@ -901,6 +958,8 @@ monthlyData.forEach(r=>{
 const d=new Date(r.Plan_Date).getDate()
 
 if(d>=start && d<=end){
+
+rows.push(r)
 
 const qty=Number(r.Plan_Quantity)||0
 
@@ -916,8 +975,58 @@ machine[r.Plan_Machine]+=qty
 
 })
 
-const skuText=Object.entries(sku).map(([k,v])=>`${k}: ${v}`).join(", ") || "No Data"
-const machineText=Object.entries(machine).map(([k,v])=>`${k}: ${v}`).join(", ") || "No Data"
+/* KPI calculations */
+
+const progress=calculateProgress(total,weeklyTarget)
+const remaining=getRemaining(weeklyTarget,total)
+
+const recommendation=generateRecommendation(total,weeklyTarget,sku)
+
+/* SKU bars */
+
+let skuBars=""
+
+Object.entries(sku).forEach(([k,v])=>{
+
+let percent=Math.round((v/weeklyTarget)*100)
+
+skuBars+=`
+<div style="margin-bottom:6px">
+${k}
+<div style="background:#e5e7eb;height:8px;border-radius:4px">
+<div style="width:${percent}%;background:#2563eb;height:8px;border-radius:4px"></div>
+</div>
+<span>${v}</span>
+</div>
+`
+
+})
+
+/* machine bars */
+
+let machineBars=""
+
+Object.entries(machine).forEach(([k,v])=>{
+
+let percent=Math.round((v/weeklyTarget)*100)
+
+machineBars+=`
+<div style="margin-bottom:6px">
+${k}
+<div style="background:#e5e7eb;height:8px;border-radius:4px">
+<div style="width:${percent}%;background:#16a34a;height:8px;border-radius:4px"></div>
+</div>
+<span>${v}</span>
+</div>
+`
+
+})
+
+/* daily chart data */
+
+const daily=getDailyStats(rows)
+
+const chartId="chart_"+w
 
 container.innerHTML+=`
 
@@ -927,28 +1036,98 @@ container.innerHTML+=`
 Week ${w} (${start}-${end})
 </div>
 
+<div style="margin-bottom:10px">
+
+<b>Total Planned</b><br>
+${total}
+
+</div>
+
+<div style="margin-bottom:10px">
+
+<b>Weekly Target Progress</b>
+
+<div style="background:#e5e7eb;height:10px;border-radius:6px">
+
+<div style="width:${progress}%;background:#22c55e;height:10px;border-radius:6px"></div>
+
+</div>
+
+${progress}% of weekly target
+
+</div>
+
+<div style="margin-bottom:10px">
+
+<b>Remaining Production</b><br>
+
+${remaining} Units pending
+
+</div>
+
 <div class="week-grid">
 
 <div>
-<b>Total Planned</b><br>
-${total}
+
+<b>SKU Wise Production</b>
+
+${skuBars}
+
 </div>
 
 <div>
-<b>SKU Wise</b><br>
-${skuText}
+
+<b>Machine Load</b>
+
+${machineBars}
+
 </div>
 
 <div>
-<b>Machine Wise</b><br>
-${machineText}
+
+<b>Daily Production</b>
+
+<canvas id="${chartId}" height="120"></canvas>
+
 </div>
+
+</div>
+
+<div style="margin-top:12px;background:#fff7ed;padding:10px;border-radius:8px">
+
+<b>Recommendation</b><br>
+
+${recommendation}
 
 </div>
 
 </div>
 
 `
+
+setTimeout(()=>{
+
+new Chart(document.getElementById(chartId),{
+
+type:'bar',
+
+data:{
+labels:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
+datasets:[{
+label:"Planned Production",
+data:daily,
+backgroundColor:"#2563eb"
+}]
+},
+
+options:{
+plugins:{legend:{display:false}},
+scales:{y:{beginAtZero:true}}
+}
+
+})
+
+},50)
 
 }
 
