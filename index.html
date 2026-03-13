@@ -163,9 +163,7 @@ cursor:pointer;
 <div style="display:flex;gap:8px;margin-top:10px">
 
 <button id="addPlanBtn" class="addRow" onclick="enableAddMode()">Add Plan</button>
-
 <button id="updatePlanBtn" class="addRow" onclick="enableUpdateMode()">Update Plan</button>
-
 <button id="savePlanBtn" class="saveBtn" onclick="savePlan()">Save Plan</button>
 
 </div>
@@ -300,6 +298,7 @@ dateHasPlan = rows.length>0;
 
 rows.forEach(r=>{
 addRow(r.Plan_Shift,r.ts);
+
 const table=document.querySelector(`#table_${r.Plan_Shift}`);
 const row=table.lastElementChild;
 
@@ -318,10 +317,8 @@ calcDaily();
 function updateButtons(){
 
 if(dateHasPlan){
-addPlanBtn.style.display="inline-block";
 updatePlanBtn.style.display="inline-block";
 }else{
-addPlanBtn.style.display="inline-block";
 updatePlanBtn.style.display="none";
 }
 
@@ -429,7 +426,6 @@ function deleteRow(btn){
 if(plannerMode!=="update") return;
 
 const confirmDelete=confirm("Are you sure you want to delete this plan?");
-
 if(!confirmDelete) return;
 
 const row=btn.parentElement.parentElement;
@@ -480,8 +476,6 @@ alert("Select date first");
 return;
 }
 
-/* DELETE */
-
 /* DELETE TELEMETRY */
 
 for(const ts of deletedRows){
@@ -502,6 +496,11 @@ deletedRows=[];
 
 let payload=[];
 
+/* UNIQUE TIMESTAMP GENERATION */
+
+let baseTs = Date.now();
+let counter = 0;
+
 document.querySelectorAll(".planRow").forEach(r=>{
 
 const machine=r.querySelector(".machine").value.trim();
@@ -512,12 +511,16 @@ const shift=r.dataset.shift;
 
 if(!machine || isNaN(qty)) return;
 
+/* ADD MODE */
+
 if(plannerMode==="add"){
 
 if(r.dataset.newrow!=="true") return;
 
+counter++;
+
 payload.push({
-ts:Date.now()+Math.floor(Math.random()*1000),
+ts: baseTs + counter,
 values:{
 Plan_Date:selectedDate,
 Plan_Shift:shift,
@@ -529,6 +532,8 @@ Plan_Quantity:qty
 });
 
 }
+
+/* UPDATE MODE */
 
 else if(plannerMode==="update"){
 
@@ -571,6 +576,8 @@ body:JSON.stringify(payload)
 alert("Plan saved successfully");
 
 await loadMonthData();
+
+selectDate(selectedDate);
 
 }
 
