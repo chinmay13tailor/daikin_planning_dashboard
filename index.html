@@ -287,6 +287,7 @@ if(el) el.innerText=totals[d];
 function selectDate(date){
 
 selectedDate=date;
+
 document.getElementById("selectedDate").innerText=date;
 
 clearTables();
@@ -301,6 +302,7 @@ rows.forEach(r=>{
 addRow(r.Plan_Shift,r.ts);
 const table=document.querySelector(`#table_${r.Plan_Shift}`);
 const row=table.lastElementChild;
+
 row.querySelector(".machine").value=r.Plan_Machine||"";
 row.querySelector(".sku").value=r.Plan_SKU||"";
 row.querySelector(".job").value=r.Plan_Job_Number||"";
@@ -332,6 +334,7 @@ function lockPlanner(){
 document.querySelectorAll(".planRow input").forEach(i=>i.disabled=true);
 document.querySelectorAll(".addBtn").forEach(b=>b.disabled=true);
 document.querySelectorAll(".deleteBtn").forEach(b=>b.disabled=true);
+
 savePlanBtn.disabled=true;
 
 }
@@ -374,14 +377,16 @@ shiftContainer.innerHTML+=`
 
 function addRow(shift,ts=null){
 
-if(plannerMode==="update") return;
-
 const table=document.getElementById(`table_${shift}`);
 
 const row=document.createElement("tr");
 row.className="planRow";
 row.dataset.shift=shift;
 row.dataset.ts=ts||"";
+
+if(!ts){
+row.dataset.newrow="true";
+}
 
 row.innerHTML=`
 <td><input class="machine"></td>
@@ -428,6 +433,7 @@ const confirmDelete=confirm("Are you sure you want to delete this plan?");
 if(!confirmDelete) return;
 
 const row=btn.parentElement.parentElement;
+
 const ts=row.dataset.ts;
 
 if(ts){
@@ -435,6 +441,7 @@ deletedRows.push(ts);
 }
 
 row.remove();
+
 calcDaily();
 
 }
@@ -473,7 +480,7 @@ alert("Select date first");
 return;
 }
 
-/* DELETE TELEMETRY */
+/* DELETE */
 
 for(const ts of deletedRows){
 
@@ -497,13 +504,31 @@ const job=r.querySelector(".job").value.trim();
 const qty=parseFloat(r.querySelector(".qty").value);
 const shift=r.dataset.shift;
 
-if(machine && !isNaN(qty)){
+if(!machine || isNaN(qty)) return;
 
-let ts=r.dataset.ts;
+if(plannerMode==="add"){
 
-if(plannerMode==="add" || !ts){
-ts=Date.now()+Math.floor(Math.random()*1000);
+if(r.dataset.newrow!=="true") return;
+
+payload.push({
+ts:Date.now()+Math.floor(Math.random()*1000),
+values:{
+Plan_Date:selectedDate,
+Plan_Shift:shift,
+Plan_Machine:machine,
+Plan_SKU:sku,
+Plan_Job_Number:job,
+Plan_Quantity:qty
 }
+});
+
+}
+
+else if(plannerMode==="update"){
+
+const ts=r.dataset.ts;
+
+if(!ts) return;
 
 payload.push({
 ts:Number(ts),
@@ -520,6 +545,11 @@ Plan_Quantity:qty
 }
 
 });
+
+if(payload.length===0){
+alert("No changes to save");
+return;
+}
 
 await fetch(`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/ANY`,{
 
