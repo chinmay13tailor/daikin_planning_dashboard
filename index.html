@@ -161,11 +161,9 @@ cursor:pointer;
 <div id="shiftContainer"></div>
 
 <div style="display:flex;gap:8px;margin-top:10px">
-
 <button id="addPlanBtn" class="addRow" onclick="enableAddMode()">Add Plan</button>
 <button id="updatePlanBtn" class="addRow" onclick="enableUpdateMode()">Update Plan</button>
 <button id="savePlanBtn" class="saveBtn" onclick="savePlan()">Save Plan</button>
-
 </div>
 
 </div>
@@ -243,8 +241,7 @@ async function loadMonthData(){
 const start=new Date(currentMonth.getFullYear(),currentMonth.getMonth(),1).getTime();
 const end=new Date(currentMonth.getFullYear(),currentMonth.getMonth()+1,0,23,59,59).getTime();
 
-const url=`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries`
-+`?keys=${KEYS.join(",")}&startTs=${start}&endTs=${end}&limit=5000&agg=NONE`;
+const url=`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries?keys=${KEYS.join(",")}&startTs=${start}&endTs=${end}&limit=5000&agg=NONE`;
 
 const res=await fetch(url,{headers:{"X-Authorization":"Bearer "+JWT}});
 const data=await res.json();
@@ -285,7 +282,6 @@ if(el) el.innerText=totals[d];
 function selectDate(date){
 
 selectedDate=date;
-
 document.getElementById("selectedDate").innerText=date;
 
 clearTables();
@@ -345,7 +341,6 @@ SHIFTS.forEach(s=>{
 shiftContainer.innerHTML+=`
 
 <div class="shift">
-
 <div class="shift-title">Shift ${s}</div>
 
 <table>
@@ -425,17 +420,16 @@ function deleteRow(btn){
 
 if(plannerMode!=="update") return;
 
-const confirmDelete=confirm("Are you sure you want to delete this plan?");
-if(!confirmDelete) return;
+if(!confirm("Are you sure you want to delete this plan?")) return;
 
 const row=btn.parentElement.parentElement;
 
 const ts = Number(row.dataset.ts);
-console.log("Marked for deletion:", ts);
 
 if(ts){
 deletedRows.push(ts);
 }
+
 row.remove();
 
 calcDaily();
@@ -478,14 +472,10 @@ return;
 
 /* DELETE TELEMETRY */
 
-/* DELETE TELEMETRY */
-
 for(const ts of deletedRows){
 
-console.log("Deleting ts:", ts);
-
 await fetch(
-`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/delete?keys=Plan_Date,Plan_Shift,Plan_Machine,Plan_SKU,Plan_Job_Number,Plan_Quantity&startTs=${ts}&endTs=${ts}&rewriteLatestIfDeleted=true`,
+`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/delete?keys=Plan_Date,Plan_Shift,Plan_Machine,Plan_SKU,Plan_Job_Number,Plan_Quantity&startTs=${ts-1}&endTs=${ts+1}&rewriteLatestIfDeleted=true`,
 {
 method:"DELETE",
 headers:{
@@ -500,8 +490,6 @@ deletedRows=[];
 
 let payload=[];
 
-/* UNIQUE TIMESTAMP GENERATION */
-
 let baseTs = Date.now();
 let counter = 0;
 
@@ -515,8 +503,6 @@ const shift=r.dataset.shift;
 
 if(!machine || isNaN(qty)) return;
 
-/* ADD MODE */
-
 if(plannerMode==="add"){
 
 if(r.dataset.newrow!=="true") return;
@@ -524,7 +510,7 @@ if(r.dataset.newrow!=="true") return;
 counter++;
 
 payload.push({
-ts: baseTs + counter,
+ts: baseTs + (counter * 3),
 values:{
 Plan_Date:selectedDate,
 Plan_Shift:shift,
@@ -536,8 +522,6 @@ Plan_Quantity:qty
 });
 
 }
-
-/* UPDATE MODE */
 
 else if(plannerMode==="update"){
 
