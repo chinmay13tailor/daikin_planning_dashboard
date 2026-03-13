@@ -340,6 +340,9 @@ grid-template-columns:1fr 1fr 1fr;
 gap:10px;
 font-size:13px;
 }
+  .week-mode{
+grid-template-columns:100% !important;
+}
 </style>
 </head>
 
@@ -840,6 +843,14 @@ document.getElementById("weekView").style.display="none";
 calendarViewBtn.classList.add("active");
 weekViewBtn.classList.remove("active");
 
+/* show production plan panel */
+
+document.querySelector(".plan-panel").style.display="flex";
+
+/* restore layout */
+
+document.querySelector(".container").classList.remove("week-mode");
+
 }
 
 function showWeekView(){
@@ -851,6 +862,14 @@ document.getElementById("weekView").style.display="block";
 
 calendarViewBtn.classList.remove("active");
 weekViewBtn.classList.add("active");
+
+/* hide production plan panel */
+
+document.querySelector(".plan-panel").style.display="none";
+
+/* expand week view full width */
+
+document.querySelector(".container").classList.add("week-mode");
 
 renderWeekView();
 
