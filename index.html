@@ -122,62 +122,108 @@ color:#64748b;
 
 /* RIGHT PANEL */
 
+/* RIGHT PANEL */
+
 .plan-panel{
 flex:1.3;
-background:white;
+background:#f5f6f8;
 border-radius:14px;
-padding:18px;
-box-shadow:0 8px 20px rgba(0,0,0,.06);
+overflow:hidden;
 display:flex;
 flex-direction:column;
 }
 
 /* HEADER */
 
-.plan-panel h3{
-margin:0 0 12px 0;
-font-size:18px;
-color:#0f172a;
-}
-
-/* SUMMARY */
-
-.summary{
+.plan-header{
+background:#165da8;
+color:white;
+padding:18px;
 display:flex;
 justify-content:space-between;
-background:#f1f5ff;
-padding:14px;
-border-radius:10px;
-margin-bottom:16px;
-font-size:13px;
+align-items:center;
 }
 
-.summary div{
-text-align:center;
-flex:1;
-}
-
-.summary b{
+.plan-title{
 font-size:18px;
-color:#2563eb;
+font-weight:600;
+}
+
+.plan-date{
+font-size:13px;
+opacity:.9;
+}
+
+.plan-close{
+font-size:18px;
+cursor:pointer;
+}
+
+/* DAILY CARD */
+
+.daily-card{
+background:white;
+margin:16px;
+border-radius:10px;
+padding:16px;
+border:1px solid #e2e8f0;
+}
+
+.daily-title{
+font-weight:600;
+font-size:14px;
+margin-bottom:14px;
+color:#334155;
+}
+
+.daily-summary{
+display:flex;
+justify-content:space-between;
+}
+
+.metric-label{
+font-size:12px;
+color:#64748b;
+}
+
+.metric-value{
+font-size:22px;
+font-weight:600;
+color:#165da8;
 }
 
 /* SHIFT CARD */
 
 .shift{
-border:1px solid #e5e7eb;
-border-radius:10px;
-margin-bottom:16px;
 background:white;
+border-radius:10px;
+margin:10px 16px;
+border:1px solid #e2e8f0;
 overflow:hidden;
 }
 
 .shift-title{
-background:#f8fafc;
-padding:10px;
+padding:12px 16px;
 font-weight:600;
-color:#1e293b;
-border-bottom:1px solid #e5e7eb;
+display:flex;
+align-items:center;
+gap:10px;
+border-left:4px solid #3b82f6;
+background:#f8fafc;
+}
+
+/* SHIFT COLORS */
+
+.shift:nth-child(1) .shift-title{
+border-left:4px solid #2563eb;
+}
+
+.shift:nth-child(2) .shift-title{
+border-left:4px solid #16a34a;
+}
+
+.shift:nth-child(3) .shift-title{
+border-left:4px solid #f97316;
 }
 
 /* TABLE */
@@ -189,11 +235,10 @@ font-size:12px;
 }
 
 table th{
-background:#f9fafb;
-text-align:left;
+background:#f1f5f9;
 padding:8px;
 font-weight:600;
-color:#374151;
+color:#475569;
 }
 
 table td{
@@ -210,40 +255,7 @@ border-radius:6px;
 font-size:12px;
 }
 
-/* ADD ROW */
-
-.addRow{
-margin:8px;
-padding:6px 10px;
-background:#f1f5f9;
-border:none;
-border-radius:6px;
-cursor:pointer;
-font-size:12px;
-}
-
-.addRow:hover{
-background:#e2e8f0;
-}
-
-/* BUTTONS */
-
-.saveBtn{
-flex:1;
-padding:12px;
-background:linear-gradient(135deg,#2563eb,#1d4ed8);
-border:none;
-border-radius:10px;
-color:white;
-font-weight:600;
-cursor:pointer;
-}
-
-.saveBtn:hover{
-box-shadow:0 8px 16px rgba(37,99,235,.3);
-}
-
-/* DELETE */
+/* DELETE BUTTON */
 
 .deleteBtn{
 background:#ef4444;
@@ -258,6 +270,41 @@ cursor:pointer;
 background:#dc2626;
 }
 
+/* BUTTONS */
+
+.plan-buttons{
+display:flex;
+gap:10px;
+padding:16px;
+}
+
+.plan-btn{
+background:#e2e8f0;
+border:none;
+padding:10px 12px;
+border-radius:8px;
+cursor:pointer;
+font-size:13px;
+}
+
+.plan-btn:hover{
+background:#cbd5e1;
+}
+
+.saveBtn{
+flex:1;
+background:linear-gradient(135deg,#2563eb,#1d4ed8);
+color:white;
+border:none;
+padding:12px;
+border-radius:10px;
+font-weight:600;
+cursor:pointer;
+}
+
+.saveBtn:hover{
+box-shadow:0 6px 16px rgba(37,99,235,.4);
+}
 </style>
 </head>
 
@@ -288,20 +335,49 @@ background:#dc2626;
 
 <div class="plan-panel">
 
-<h3>Production Plan <span id="selectedDate"></span></h3>
+<div class="plan-header">
+<div>
+<div class="plan-title">Production Plan</div>
+<div class="plan-date" id="selectedDate"></div>
+</div>
+<div class="plan-close">✕</div>
+</div>
 
-<div class="summary">
-<div>Total Units<br><b id="dailyUnits">0</b></div>
-<div>Machines<br><b id="dailyMachines">0</b></div>
-<div>SKUs<br><b id="dailySkus">0</b></div>
+<div class="daily-card">
+
+<div class="daily-title">Daily Production Planning</div>
+
+<div class="daily-summary">
+
+<div>
+<div class="metric-label">Total Units</div>
+<div class="metric-value" id="dailyUnits">0</div>
+</div>
+
+<div>
+<div class="metric-label">Total Machines</div>
+<div class="metric-value" id="dailyMachines">0</div>
+</div>
+
+<div>
+<div class="metric-label">SKUs Running</div>
+<div class="metric-value" id="dailySkus">0</div>
+</div>
+
+</div>
+
 </div>
 
 <div id="shiftContainer"></div>
 
-<div style="display:flex;gap:8px;margin-top:10px">
-<button id="addPlanBtn" class="addRow" onclick="enableAddMode()">Add Plan</button>
-<button id="updatePlanBtn" class="addRow" onclick="enableUpdateMode()">Update Plan</button>
+<div class="plan-buttons">
+
+<button id="addPlanBtn" class="plan-btn" onclick="enableAddMode()">Add Plan</button>
+
+<button id="updatePlanBtn" class="plan-btn" onclick="enableUpdateMode()">Update Plan</button>
+
 <button id="savePlanBtn" class="saveBtn" onclick="savePlan()">Save Plan</button>
+
 </div>
 
 </div>
