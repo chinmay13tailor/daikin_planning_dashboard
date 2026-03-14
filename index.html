@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <head>
 <meta charset="UTF-8">
 <title>Production Planning</title>
@@ -297,53 +296,6 @@ cursor:pointer;
 .saveBtn:hover{
 box-shadow:0 6px 16px rgba(37,99,235,.4);
 }
-
-  /* VIEW TOGGLE */
-
-.view-toggle{
-display:flex;
-gap:10px;
-margin-bottom:10px;
-}
-
-.view-toggle button{
-border:none;
-background:#e2e8f0;
-padding:8px 14px;
-border-radius:8px;
-cursor:pointer;
-font-size:13px;
-}
-
-.view-toggle button.active{
-background:#2563eb;
-color:white;
-}
-
-/* WEEK VIEW */
-
-.week-card{
-background:white;
-border-radius:10px;
-border:1px solid #e5e7eb;
-padding:12px;
-margin-bottom:10px;
-}
-
-.week-title{
-font-weight:600;
-margin-bottom:6px;
-}
-
-.week-grid{
-display:grid;
-grid-template-columns:1fr 1fr 1fr;
-gap:10px;
-font-size:13px;
-}
-  .week-mode{
-grid-template-columns:100% !important;
-}
 </style>
 </head>
 
@@ -351,10 +303,7 @@ grid-template-columns:100% !important;
 <div class="container">
 
 <div class="calendar">
-<div class="view-toggle">
-<button id="calendarViewBtn" class="active" onclick="showCalendarView()">Calendar View</button>
-<button id="weekViewBtn" onclick="showWeekView()">Week View</button>
-</div>
+
 <div class="month-header">
 <button onclick="prevMonth()">◀</button>
 <span id="monthLabel"></span>
@@ -371,23 +320,31 @@ grid-template-columns:100% !important;
 <div>Sat</div>
 </div>
 
-<div id="calendarView">
-
 <div id="calendarGrid" class="calendar-grid"></div>
-
-</div>
-
-<div id="weekView" style="display:none"></div>
 
 </div>
 
 <div class="plan-panel">
 
 <div class="plan-header">
+
 <div>
 <div class="plan-title">Production Plan</div>
 <div class="plan-date" id="selectedDate"></div>
 </div>
+
+<button onclick="openAnalytics()" style="
+background:white;
+color:#165da8;
+border:none;
+padding:8px 14px;
+border-radius:8px;
+cursor:pointer;
+font-weight:600;
+">
+Analytics
+</button>
+
 </div>
 <div class="plan-content">
 <div class="daily-card">
@@ -432,7 +389,7 @@ grid-template-columns:100% !important;
 </div>
 
 <script>
-let currentView = "calendar";
+
 const API="https://plantwiz.pimateck.in/api";
 const DEVICE_ID="c405dfd0-1ded-11f1-a7bb-af87c4a25aec";
 const JWT=new URLSearchParams(location.search).get("token")||"";
@@ -456,51 +413,6 @@ let currentMonth=new Date();
 let selectedDate=null;
 let monthlyData=[];
 
-/* ---------- WEEK VIEW HELPER FUNCTIONS (GLOBAL) ---------- */
-
-function calculateProgress(planned,target){
-if(target===0) return 0
-return Math.round((planned/target)*100)
-}
-
-function getRemaining(target,planned){
-return Math.max(target-planned,0)
-}
-
-function getDailyStats(rows){
-const days=[0,0,0,0,0,0,0]
-
-rows.forEach(r=>{
-const d=new Date(r.Plan_Date).getDay()
-days[d]+=Number(r.Plan_Quantity)||0
-})
-
-return days
-}
-
-function generateRecommendation(planned,target,skuStats){
-
-let remaining=target-planned
-
-if(remaining<=0){
-return "Weekly production target achieved."
-}
-
-let worstSKU=null
-let min=Infinity
-
-Object.entries(skuStats).forEach(([k,v])=>{
-if(v<min){
-min=v
-worstSKU=k
-}
-})
-
-return `${remaining} units still pending. Focus on SKU ${worstSKU} next week.`
-}
-
-/* ---------- INIT ---------- */
-
 init();
 
 async function init(){
@@ -509,8 +421,6 @@ generateCalendar();
 await loadMonthData();
 lockPlanner();
 }
-
-/* ---------- CALENDAR ---------- */
 
 function generateCalendar(){
 
@@ -544,8 +454,6 @@ calendarGrid.innerHTML+=`
 function prevMonth(){currentMonth.setMonth(currentMonth.getMonth()-1);init();}
 function nextMonth(){currentMonth.setMonth(currentMonth.getMonth()+1);init();}
 
-/* ---------- LOAD DATA ---------- */
-
 async function loadMonthData(){
 
 const start=new Date(currentMonth.getFullYear(),currentMonth.getMonth(),1).getTime();
@@ -569,13 +477,7 @@ monthlyData=Object.values(rows);
 
 updateCalendar();
 
-if(currentView === "week"){
-renderWeekView();
 }
-
-}
-
-/* ---------- CALENDAR UPDATE ---------- */
 
 function updateCalendar(){
 
@@ -595,165 +497,303 @@ if(el) el.innerText=totals[d];
 
 }
 
-/* ---------- WEEK VIEW ---------- */
+function selectDate(date){
 
-function renderWeekView(){
+selectedDate=date;
+document.getElementById("selectedDate").innerText=date;
 
-const container=document.getElementById("weekView")
-container.innerHTML=""
+clearTables();
 
-const year=currentMonth.getFullYear()
-const month=currentMonth.getMonth()
+plannerMode="view";
 
-const days=new Date(year,month+1,0).getDate()
-const weeks=Math.ceil(days/7)
+const rows=monthlyData.filter(r=>r.Plan_Date===date);
 
-const monthlyTarget=300000
-const weeklyTarget=Math.round(monthlyTarget/weeks)
+dateHasPlan = rows.length>0;
 
-for(let w=1;w<=weeks;w++){
+rows.forEach(r=>{
+addRow(r.Plan_Shift,r.ts);
 
-let start=(w-1)*7+1
-let end=Math.min(w*7,days)
+const table=document.querySelector(`#table_${r.Plan_Shift}`);
+const row=table.lastElementChild;
 
-let rows=[]
-let total=0
-let sku={}
-let machine={}
+row.querySelector(".machine").value=r.Plan_Machine||"";
+row.querySelector(".sku").value=r.Plan_SKU||"";
+row.querySelector(".job").value=r.Plan_Job_Number||"";
+row.querySelector(".qty").value=r.Plan_Quantity||"";
+});
 
-monthlyData.forEach(r=>{
-
-const d=new Date(r.Plan_Date).getDate()
-
-if(d>=start && d<=end){
-
-rows.push(r)
-
-const qty=Number(r.Plan_Quantity)||0
-
-total+=qty
-
-if(!sku[r.Plan_SKU]) sku[r.Plan_SKU]=0
-if(!machine[r.Plan_Machine]) machine[r.Plan_Machine]=0
-
-sku[r.Plan_SKU]+=qty
-machine[r.Plan_Machine]+=qty
+lockPlanner();
+updateButtons();
+calcDaily();
 
 }
 
-})
+function updateButtons(){
 
-const progress=calculateProgress(total,weeklyTarget)
-const remaining=getRemaining(weeklyTarget,total)
-const recommendation=generateRecommendation(total,weeklyTarget,sku)
+if(dateHasPlan){
+updatePlanBtn.style.display="inline-block";
+}else{
+updatePlanBtn.style.display="none";
+}
 
-let skuBars=""
-Object.entries(sku).forEach(([k,v])=>{
-let percent=Math.round((v/weeklyTarget)*100)
+savePlanBtn.disabled=true;
 
-skuBars+=`
-<div style="margin-bottom:6px">
-${k}
-<div style="background:#e5e7eb;height:8px;border-radius:4px">
-<div style="width:${percent}%;background:#2563eb;height:8px;border-radius:4px"></div>
-</div>
-<span>${v}</span>
-</div>`
-})
+}
 
-let machineBars=""
-Object.entries(machine).forEach(([k,v])=>{
-let percent=Math.round((v/weeklyTarget)*100)
+function lockPlanner(){
 
-machineBars+=`
-<div style="margin-bottom:6px">
-${k}
-<div style="background:#e5e7eb;height:8px;border-radius:4px">
-<div style="width:${percent}%;background:#16a34a;height:8px;border-radius:4px"></div>
-</div>
-<span>${v}</span>
-</div>`
-})
+document.querySelectorAll(".planRow input").forEach(i=>i.disabled=true);
+document.querySelectorAll(".addBtn").forEach(b=>b.disabled=true);
+document.querySelectorAll(".deleteBtn").forEach(b=>b.disabled=true);
 
-const daily=getDailyStats(rows)
-const chartId="chart_"+w
+savePlanBtn.disabled=true;
 
-container.innerHTML+=`
+}
 
-<div class="week-card">
+function createShiftTables(){
 
-<div class="week-title">
-Week ${w} (${start}-${end})
-</div>
+shiftContainer.innerHTML="";
 
-<div style="margin-bottom:10px">
-<b>Total Planned</b><br>
-${total}
-</div>
+SHIFTS.forEach(s=>{
 
-<div style="margin-bottom:10px">
-<b>Weekly Target Progress</b>
+shiftContainer.innerHTML+=`
 
-<div style="background:#e5e7eb;height:10px;border-radius:6px">
-<div style="width:${progress}%;background:#22c55e;height:10px;border-radius:6px"></div>
-</div>
+<div class="shift">
+<div class="shift-title">Shift ${s}</div>
 
-${progress}% of weekly target
-</div>
+<table>
+<thead>
+<tr>
+<th>Machine</th>
+<th>SKU</th>
+<th>Job No.</th>
+<th>Qty</th>
+<th></th>
+</tr>
+</thead>
 
-<div style="margin-bottom:10px">
-<b>Remaining Production</b><br>
-${remaining} Units pending
-</div>
+<tbody id="table_${s}"></tbody>
+</table>
 
-<div class="week-grid">
-
-<div>
-<b>SKU Wise Production</b>
-${skuBars}
-</div>
-
-<div>
-<b>Machine Load</b>
-${machineBars}
-</div>
-
-<div>
-<b>Daily Production</b>
-<canvas id="${chartId}" height="120"></canvas>
-</div>
+<button class="addRow addBtn" onclick="addRow('${s}')">+ Add Row</button>
 
 </div>
 
-<div style="margin-top:12px;background:#fff7ed;padding:10px;border-radius:8px">
-<b>Recommendation</b><br>
-${recommendation}
-</div>
+`;
 
-</div>
-`
+});
 
-setTimeout(()=>{
-new Chart(document.getElementById(chartId),{
-type:'bar',
-data:{
-labels:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
-datasets:[{
-label:"Planned Production",
-data:daily,
-backgroundColor:"#2563eb"
-}]
+}
+
+function addRow(shift,ts=null){
+
+const table=document.getElementById(`table_${shift}`);
+
+const row=document.createElement("tr");
+row.className="planRow";
+row.dataset.shift=shift;
+row.dataset.ts=ts||"";
+
+if(!ts){
+row.dataset.newrow="true";
+}
+
+row.innerHTML=`
+<td><input class="machine"></td>
+<td><input class="sku"></td>
+<td><input class="job"></td>
+<td><input class="qty" type="number" oninput="calcDaily()"></td>
+<td><button class="deleteBtn" onclick="deleteRow(this)">🗑</button></td>
+`;
+
+table.appendChild(row);
+
+}
+
+function enableAddMode(){
+
+plannerMode="add";
+
+document.querySelectorAll(".planRow input").forEach(i=>i.disabled=true);
+document.querySelectorAll(".addBtn").forEach(b=>b.disabled=false);
+document.querySelectorAll(".deleteBtn").forEach(b=>b.disabled=true);
+
+savePlanBtn.disabled=false;
+
+}
+
+function enableUpdateMode(){
+
+plannerMode="update";
+
+document.querySelectorAll(".planRow input").forEach(i=>i.disabled=false);
+document.querySelectorAll(".deleteBtn").forEach(b=>b.disabled=false);
+document.querySelectorAll(".addBtn").forEach(b=>b.disabled=true);
+
+savePlanBtn.disabled=false;
+
+}
+
+function deleteRow(btn){
+
+if(plannerMode!=="update") return;
+
+if(!confirm("Are you sure you want to delete this plan?")) return;
+
+const row=btn.parentElement.parentElement;
+
+const ts = Number(row.dataset.ts);
+
+if(ts){
+deletedRows.push(ts);
+}
+
+row.remove();
+
+calcDaily();
+
+}
+
+function clearTables(){
+SHIFTS.forEach(s=>document.getElementById(`table_${s}`).innerHTML="");
+calcDaily();
+}
+
+function calcDaily(){
+
+let total=0;
+let machines=new Set();
+let skus=new Set();
+
+document.querySelectorAll(".planRow").forEach(r=>{
+const m=r.querySelector(".machine").value;
+const s=r.querySelector(".sku").value;
+const q=Number(r.querySelector(".qty").value);
+
+if(q) total+=q;
+if(m) machines.add(m);
+if(s) skus.add(s);
+});
+
+dailyUnits.innerText=total;
+dailyMachines.innerText=machines.size;
+dailySkus.innerText=skus.size;
+
+}
+
+async function savePlan(){
+
+if(!selectedDate){
+alert("Select date first");
+return;
+}
+
+/* DELETE TELEMETRY */
+
+for(const ts of deletedRows){
+
+await fetch(
+`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/delete?keys=Plan_Date,Plan_Shift,Plan_Machine,Plan_SKU,Plan_Job_Number,Plan_Quantity&startTs=${ts-1}&endTs=${ts+1}&rewriteLatestIfDeleted=true`,
+{
+method:"DELETE",
+headers:{
+"X-Authorization":"Bearer "+JWT
+}
+}
+);
+
+}
+
+deletedRows=[];
+
+let payload=[];
+
+let baseTs = Date.now();
+let counter = 0;
+
+document.querySelectorAll(".planRow").forEach(r=>{
+
+const machine=r.querySelector(".machine").value.trim();
+const sku=r.querySelector(".sku").value.trim();
+const job=r.querySelector(".job").value.trim();
+const qty=parseFloat(r.querySelector(".qty").value);
+const shift=r.dataset.shift;
+
+if(!machine || isNaN(qty)) return;
+
+if(plannerMode==="add"){
+
+if(r.dataset.newrow!=="true") return;
+
+counter++;
+
+payload.push({
+ts: baseTs + (counter * 3),
+values:{
+Plan_Date:selectedDate,
+Plan_Shift:shift,
+Plan_Machine:machine,
+Plan_SKU:sku,
+Plan_Job_Number:job,
+Plan_Quantity:qty
+}
+});
+
+}
+
+else if(plannerMode==="update"){
+
+const ts=r.dataset.ts;
+
+if(!ts) return;
+
+payload.push({
+ts:Number(ts),
+values:{
+Plan_Date:selectedDate,
+Plan_Shift:shift,
+Plan_Machine:machine,
+Plan_SKU:sku,
+Plan_Job_Number:job,
+Plan_Quantity:qty
+}
+});
+
+}
+
+});
+
+if(payload.length===0){
+alert("No changes to save");
+return;
+}
+
+await fetch(`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/ANY`,{
+
+method:"POST",
+headers:{
+"X-Authorization":"Bearer "+JWT,
+"Content-Type":"application/json"
 },
-options:{
-plugins:{legend:{display:false}},
-scales:{y:{beginAtZero:true}}
+body:JSON.stringify(payload)
+
+});
+
+alert("Plan saved successfully");
+
+await loadMonthData();
+
+selectDate(selectedDate);
+
 }
-})
-},50)
+function openAnalytics(){
+
+const token = new URLSearchParams(location.search).get("token") || "";
+
+window.location.href = "analytics.html?token=" + token;
 
 }
 
-}
 </script>
 
 </body>
