@@ -39,8 +39,9 @@ border:1px solid #cbd5e1;
 display:flex;
 flex-direction:column;
 gap:22px;
-max-width:1200px;
-margin:auto;
+width:100%;
+padding:0 40px;
+box-sizing:border-box;
 }
 
 /* WEEK CARD */
@@ -48,8 +49,9 @@ margin:auto;
 .week-card{
 background:white;
 border-radius:12px;
-padding:20px;
+padding:22px;
 box-shadow:0 6px 18px rgba(0,0,0,.06);
+width:100%;
 }
 
 .week-title{
@@ -170,7 +172,23 @@ margin-bottom:4px;
 
 <div class="title">Weekly Production Analytics</div>
 
+<div style="display:flex;gap:12px;align-items:center">
+
+<button onclick="goPlanner()" style="
+background:#2563eb;
+color:white;
+border:none;
+padding:8px 14px;
+border-radius:6px;
+cursor:pointer;
+font-weight:500;
+">
+Planner
+</button>
+
 <select id="monthSelect" class="month-select"></select>
+
+</div>
 
 </div>
 
@@ -484,6 +502,13 @@ scales:{y:{beginAtZero:true}}
 },50)
 
 }
+
+}
+function goPlanner(){
+
+const token = new URLSearchParams(location.search).get("token") || "";
+
+window.location.href="index.html?token="+token;
 
 }
 
