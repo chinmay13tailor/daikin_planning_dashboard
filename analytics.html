@@ -1,1 +1,422 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Production Analytics</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+font-family:"Segoe UI",sans-serif;
+background:#eef2f7;
+margin:0;
+padding:20px;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+}
+
+.title{
+font-size:22px;
+font-weight:600;
+}
+
+.month-select{
+padding:8px 10px;
+border-radius:6px;
+border:1px solid #cbd5e1;
+}
+
+.week-container{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(420px,1fr));
+gap:18px;
+}
+
+.week-card{
+background:white;
+border-radius:12px;
+padding:16px;
+box-shadow:0 6px 18px rgba(0,0,0,.06);
+}
+
+.week-title{
+font-size:16px;
+font-weight:600;
+margin-bottom:10px;
+}
+
+.progress{
+background:#e5e7eb;
+height:10px;
+border-radius:6px;
+margin-top:6px;
+}
+
+.progress-bar{
+background:#22c55e;
+height:10px;
+border-radius:6px;
+}
+
+.bar{
+background:#e5e7eb;
+height:8px;
+border-radius:4px;
+margin-top:4px;
+}
+
+.bar-fill{
+height:8px;
+border-radius:4px;
+}
+
+.section{
+margin-top:14px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:14px;
+margin-top:10px;
+}
+
+.recommend{
+margin-top:14px;
+background:#fff7ed;
+padding:10px;
+border-radius:8px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<div class="title">Weekly Production Analytics</div>
+
+<select id="monthSelect" class="month-select"></select>
+
+</div>
+
+<div id="weekContainer" class="week-container"></div>
+
+<script>
+
+const API="https://plantwiz.pimateck.in/api"
+const DEVICE_ID="c405dfd0-1ded-11f1-a7bb-af87c4a25aec"
+const JWT=new URLSearchParams(location.search).get("token")||""
+
+const KEYS=[
+"Plan_Date",
+"Plan_Quantity",
+"Plan_SKU",
+"Per_min_production",
+"SKU_Running"
+]
+
+let telemetry=[]
+let currentMonth=new Date()
+
+init()
+
+async function init(){
+
+createMonthSelector()
+
+await loadMonthData()
+
+renderWeeks()
+
+}
+
+function createMonthSelector(){
+
+const select=document.getElementById("monthSelect")
+
+for(let i=0;i<12;i++){
+
+const d=new Date(new Date().getFullYear(),i,1)
+
+const option=document.createElement("option")
+
+option.value=i
+option.text=d.toLocaleString('default',{month:'long',year:'numeric'})
+
+select.appendChild(option)
+
+}
+
+select.value=currentMonth.getMonth()
+
+select.onchange=async function(){
+
+currentMonth.setMonth(this.value)
+
+await loadMonthData()
+
+renderWeeks()
+
+}
+
+}
+
+async function loadMonthData(){
+
+const start=new Date(currentMonth.getFullYear(),currentMonth.getMonth(),1).getTime()
+
+const end=new Date(currentMonth.getFullYear(),currentMonth.getMonth()+1,0,23,59,59).getTime()
+
+const url=`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/values/timeseries?keys=${KEYS.join(",")}&startTs=${start}&endTs=${end}&limit=50000&agg=NONE`
+
+const res=await fetch(url,{headers:{"X-Authorization":"Bearer "+JWT}})
+
+const data=await res.json()
+
+const rows={}
+
+Object.entries(data).forEach(([key,arr])=>{
+
+(arr||[]).forEach(p=>{
+
+rows[p.ts]=rows[p.ts]||{ts:p.ts}
+
+rows[p.ts][key]=p.value
+
+})
+
+})
+
+telemetry=Object.values(rows)
+
+}
+
+function renderWeeks(){
+
+const container=document.getElementById("weekContainer")
+
+container.innerHTML=""
+
+const year=currentMonth.getFullYear()
+const month=currentMonth.getMonth()
+
+const days=new Date(year,month+1,0).getDate()
+
+const weeks=Math.ceil(days/7)
+
+for(let w=1;w<=weeks;w++){
+
+let start=(w-1)*7+1
+let end=Math.min(w*7,days)
+
+let planned=0
+let achieved=0
+
+let skuPlanned={}
+let skuActual={}
+let machineProduction=0
+
+let daily=[0,0,0,0,0,0,0]
+
+telemetry.forEach(r=>{
+
+const d=new Date(r.Plan_Date||currentMonth).getDate()
+
+if(d>=start && d<=end){
+
+const qty=Number(r.Plan_Quantity)||0
+planned+=qty
+
+if(r.Plan_SKU){
+
+if(!skuPlanned[r.Plan_SKU]) skuPlanned[r.Plan_SKU]=0
+skuPlanned[r.Plan_SKU]+=qty
+
+}
+
+}
+
+})
+
+telemetry.forEach(r=>{
+
+const tsDate=new Date(Number(r.ts))
+const d=tsDate.getDate()
+
+if(d>=start && d<=end){
+
+const prod=Number(r.Per_min_production)||0
+
+achieved+=prod
+
+const day=tsDate.getDay()
+
+daily[day]+=prod
+
+const sku=r.SKU_Running
+
+if(sku){
+
+if(!skuActual[sku]) skuActual[sku]=0
+
+skuActual[sku]+=prod
+
+}
+
+machineProduction+=prod
+
+}
+
+})
+
+const progress=planned?Math.round((achieved/planned)*100):0
+
+const remaining=Math.max(planned-achieved,0)
+
+let skuHtml=""
+
+Object.entries(skuPlanned).forEach(([sku,val])=>{
+
+const actual=skuActual[sku]||0
+
+const percent=val?Math.round((actual/val)*100):0
+
+skuHtml+=`
+<div>
+${sku} (${actual} / ${val})
+<div class="bar">
+<div class="bar-fill" style="width:${percent}%;background:#2563eb"></div>
+</div>
+</div>
+`
+
+})
+
+let machineHtml=`
+<div>
+Machine 1 (${machineProduction})
+<div class="bar">
+<div class="bar-fill" style="width:100%;background:#16a34a"></div>
+</div>
+</div>
+`
+
+const chartId="chart_"+w
+
+let recommendation="Target achieved"
+
+Object.entries(skuPlanned).forEach(([sku,val])=>{
+
+const actual=skuActual[sku]||0
+
+if(actual<val){
+
+let pending=val-actual
+
+recommendation=`${pending} units of ${sku} still pending production`
+
+}
+
+})
+
+container.innerHTML+=`
+
+<div class="week-card">
+
+<div class="week-title">
+Week ${w} (${start}-${end})
+</div>
+
+<div class="section">
+<b>Total Planned Production</b><br>
+${planned}
+</div>
+
+<div class="section">
+<b>Production Achieved</b><br>
+${achieved}
+</div>
+
+<div class="section">
+<b>Weekly Target Progress</b>
+
+<div class="progress">
+<div class="progress-bar" style="width:${progress}%"></div>
+</div>
+
+${progress}% achieved
+</div>
+
+<div class="section">
+<b>Remaining Production</b><br>
+${remaining} Units pending
+</div>
+
+<div class="grid">
+
+<div>
+<b>SKU wise Production</b>
+${skuHtml}
+</div>
+
+<div>
+<b>Machine wise Production</b>
+${machineHtml}
+</div>
+
+<div>
+<b>Daily Production Tracking</b>
+<canvas id="${chartId}" height="120"></canvas>
+</div>
+
+</div>
+
+<div class="recommend">
+<b>Recommendation</b><br>
+${recommendation}
+</div>
+
+</div>
+`
+
+setTimeout(()=>{
+
+new Chart(document.getElementById(chartId),{
+
+type:'bar',
+
+data:{
+labels:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
+datasets:[{
+data:daily,
+backgroundColor:"#2563eb"
+}]
+},
+
+options:{
+plugins:{legend:{display:false}},
+scales:{y:{beginAtZero:true}}
+}
+
+})
+
+},50)
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
