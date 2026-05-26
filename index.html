@@ -750,7 +750,7 @@ return;
 for(const ts of deletedRows){
 
 await fetch(
-`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/delete?keys=Plan_Date,Plan_Shift,Plan_Machine,Plan_SKU,Plan_Job_Number,Plan_Quantity,Plant_Status&startTs=${ts-1}&endTs=${ts+1}&rewriteLatestIfDeleted=true`,
+`${API}/plugins/telemetry/DEVICE/${DEVICE_ID}/timeseries/delete?keys=Plan_Date,Plan_Shift,Plan_Machine,Plan_SKU,Plan_Job_Number,Plan_Quantity,Plan_Status&startTs=${ts-1}&endTs=${ts+1}&rewriteLatestIfDeleted=true`,
 {
 method:"DELETE",
 headers:{
