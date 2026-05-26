@@ -393,8 +393,11 @@ function uploadToPlanner(){
     });
 
     /* ENABLE UPDATE MODE */
-
-    parentWindow.enableUpdateMode();
+    window.parent.eval(`
+    plannerMode='add';
+    `);
+    
+    parentWindow.savePlanBtn.disabled=false;
 
     parentWindow.calcDaily();
 
