@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Excel Upload Widget</title>
+
+    <!-- XLSX Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+
+        *{
+            box-sizing:border-box;
+        }
+
+        body{
+
+            margin:0;
+            padding:30px;
+            font-family:'Segoe UI',sans-serif;
+            background:#f2f4f7;
+
+        }
+
+        .container{
+
+            width:100%;
+            background:#ffffff;
+            padding:25px;
+            border-radius:12px;
+            box-shadow:0 4px 15px rgba(0,0,0,0.08);
+
+        }
+
+        h2{
+
+            margin-top:0;
+            color:#222;
+            margin-bottom:25px;
+
+        }
+
+        .upload-section{
+
+            display:flex;
+            gap:15px;
+            align-items:center;
+            flex-wrap:wrap;
+            margin-bottom:25px;
+
+        }
+
+        input[type="file"]{
+
+            padding:8px;
+            border:1px solid #ccc;
+            border-radius:6px;
+            background:#fff;
+
+        }
+
+        button{
+
+            padding:10px 22px;
+            border:none;
+            border-radius:6px;
+            background:#1976d2;
+            color:white;
+            font-weight:600;
+            cursor:pointer;
+            transition:0.2s;
+
+        }
+
+        button:hover{
+
+            background:#1258a8;
+
+        }
+
+        table{
+
+            width:100%;
+            border-collapse:collapse;
+
+        }
+
+        table th{
+
+            background:#1976d2;
+            color:white;
+            padding:12px;
+            border:1px solid #ddd;
+            font-size:14px;
+
+        }
+
+        table td{
+
+            padding:10px;
+            border:1px solid #ddd;
+            text-align:center;
+            font-size:14px;
+
+        }
+
+        table tr:nth-child(even){
+
+            background:#f9f9f9;
+
+        }
+
+        .hidden{
+
+            display:none;
+
+        }
+
+        .summary{
+
+            margin-bottom:15px;
+            font-weight:600;
+            color:#333;
+            font-size:16px;
+
+        }
+
+        .table-wrapper{
+
+            overflow-x:auto;
+
+        }
+
+        .status{
+
+            margin-top:15px;
+            color:green;
+            font-weight:600;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h2>Excel Upload & View</h2>
+
+        <div class="upload-section">
+
+            <input type="file" id="excelFile" accept=".xlsx,.xls">
+
+            <button onclick="viewExcelData()">View Data</button>
+
+        </div>
+
+        <div class="summary hidden" id="summary"></div>
+
+        <div class="table-wrapper">
+            <div id="tableContainer"></div>
+        </div>
+
+        <div class="status" id="status"></div>
+
+    </div>
+
+    <script>
+
+        let excelData = [];
+
+        function viewExcelData(){
+
+            const fileInput = document.getElementById("excelFile");
+
+            const file = fileInput.files[0];
+
+            if(!file){
+
+                alert("Please select Excel file");
+
+                return;
+
+            }
+
+            document.getElementById("status").innerHTML = "";
+
+            const reader = new FileReader();
+
+            reader.onload = function(e){
+
+                const data = new Uint8Array(e.target.result);
+
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                const sheetName = workbook.SheetNames[0];
+
+                const worksheet = workbook.Sheets[sheetName];
+
+                excelData = XLSX.utils.sheet_to_json(worksheet);
+
+                /* DATE FORMAT CONVERSION */
+
+                excelData = excelData.map((row,index) => {
+
+                    /* SR NO */
+
+                    row["Sr No"] = index + 1;
+
+                    /* DATE FORMAT */
+
+                    if(row["Date"]){
+
+                        let jsDate;
+
+                        /* EXCEL SERIAL DATE */
+
+                        if(!isNaN(row["Date"])){
+
+                            const excelDate = Number(row["Date"]);
+
+                            jsDate = new Date((excelDate - 25569) * 86400 * 1000);
+
+                        }
+
+                        /* NORMAL DATE */
+
+                        else{
+
+                            jsDate = new Date(row["Date"]);
+
+                        }
+
+                        const day = String(jsDate.getDate()).padStart(2,'0');
+
+                        const month = String(jsDate.getMonth() + 1).padStart(2,'0');
+
+                        const year = jsDate.getFullYear();
+
+                        row["Date"] = `${day}-${month}-${year}`;
+
+                    }
+
+                    return row;
+
+                });
+
+                console.log(excelData);
+
+                generateTable(excelData);
+
+            };
+
+            reader.readAsArrayBuffer(file);
+
+        }
+
+        function generateTable(data){
+
+            if(data.length === 0){
+
+                alert("No data found in Excel");
+
+                return;
+
+            }
+
+            const headers = Object.keys(data[0]);
+
+            let html = "";
+
+            html += "<table>";
+
+            html += "<thead><tr>";
+
+            headers.forEach(header => {
+
+                html += `<th>${header}</th>`;
+
+            });
+
+            html += "</tr></thead>";
+
+            html += "<tbody>";
+
+            data.forEach(row => {
+
+                html += "<tr>";
+
+                headers.forEach(header => {
+
+                    html += `<td>${row[header] ?? ""}</td>`;
+
+                });
+
+                html += "</tr>";
+
+            });
+
+            html += "</tbody>";
+
+            html += "</table>";
+
+            document.getElementById("summary").classList.remove("hidden");
+
+            document.getElementById("summary").innerHTML =
+                `Total Records : ${data.length}`;
+
+            document.getElementById("tableContainer").innerHTML = html;
+
+            document.getElementById("status").innerHTML =
+                "Excel uploaded and processed successfully";
+
+        }
+
+    </script>
+
+</body>
+
+</html>
