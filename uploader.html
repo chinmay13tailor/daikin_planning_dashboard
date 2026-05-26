@@ -350,7 +350,8 @@ function uploadToPlanner(){
     parentWindow.clearTables();
 
     /* LOOP THROUGH EXCEL DATA */
-
+  const firstDate = convertDate(excelData[0]["Date"]);
+  parentWindow.selectDate(firstDate);
     excelData.forEach(row => {
 
         /* MAPPING */
@@ -361,12 +362,6 @@ function uploadToPlanner(){
         const shift = row["Shift"] || "";
         const sku = row["SKU"] || "";
         const qty = row["Target"] || "";
-
-        /* SELECT DATE */
-
-        parentWindow.selectDate(convertDate(planDate));
-
-
 
         /* ADD ROW */
 
