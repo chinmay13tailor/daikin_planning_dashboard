@@ -155,11 +155,13 @@
         <h2>Excel Upload & View</h2>
 
         <div class="upload-section">
-
+        
             <input type="file" id="excelFile" accept=".xlsx,.xls">
-
+        
             <button onclick="viewExcelData()">View Data</button>
-
+        
+            <button onclick="uploadToPlanner()">Upload</button>
+        
         </div>
 
         <div class="summary hidden" id="summary"></div>
@@ -319,6 +321,104 @@
                 "Excel uploaded and processed successfully";
 
         }
+        /* UPLOAD DATA TO JOB SCHEDULER */
+
+function uploadToPlanner(){
+
+    if(excelData.length === 0){
+
+        alert("Please view excel data first");
+
+        return;
+
+    }
+
+    /* GET PARENT WINDOW */
+
+    const parentWindow = window.parent;
+
+    if(!parentWindow){
+
+        alert("Parent planner not found");
+
+        return;
+
+    }
+
+    /* CLEAR OLD TABLES */
+
+    parentWindow.clearTables();
+
+    /* LOOP THROUGH EXCEL DATA */
+
+    excelData.forEach(row => {
+
+        /* MAPPING */
+
+        const planDate = row["Date"] || "";
+        const machine = row["Machine Number"] || "";
+        const job = row["Job Number"] || "";
+        const shift = row["Shift"] || "";
+        const sku = row["SKU"] || "";
+        const qty = row["Target"] || "";
+
+        /* SELECT DATE */
+
+        parentWindow.selectedDate = convertDate(planDate);
+
+        parentWindow.document.getElementById("selectedDate").innerText =
+            convertDate(planDate);
+
+        /* ADD ROW */
+
+        parentWindow.addRow(shift);
+
+        const table =
+            parentWindow.document.querySelector(`#table_${shift}`);
+
+        const lastRow = table.lastElementChild;
+
+        /* FILL VALUES */
+
+        lastRow.querySelector(".machine").value = machine;
+
+        lastRow.querySelector(".sku").value = sku;
+
+        lastRow.querySelector(".job").value = job;
+
+        lastRow.querySelector(".qty").value = qty;
+
+    });
+
+    /* ENABLE UPDATE MODE */
+
+    parentWindow.enableUpdateMode();
+
+    parentWindow.calcDaily();
+
+    alert("Excel data loaded successfully into planner");
+
+}
+
+/* DATE FORMAT */
+
+function convertDate(dateString){
+
+    if(!dateString) return "";
+
+    /* ALREADY DD-MM-YYYY */
+
+    if(dateString.includes("-")){
+
+        const parts = dateString.split("-");
+
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+    }
+
+    return dateString;
+
+}
 
     </script>
 
