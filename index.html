@@ -764,7 +764,7 @@ deletedRows=[];
 
 let payload=[];
 
-let baseTs = new Date(selectedDate + "T00:00:00").getTime();
+let baseTs = Date.now();
 let counter = 0;
 
 document.querySelectorAll(".planRow").forEach(r=>{
