@@ -393,13 +393,44 @@ function uploadToPlanner(){
     });
 
     /* ENABLE UPDATE MODE */
-    window.parent.eval(`
-    plannerMode='add';
-    `);
-    
-    parentWindow.savePlanBtn.disabled=false;
+/* FORCE ADD MODE */
 
-    parentWindow.calcDaily();
+window.parent.eval(`
+
+plannerMode='add';
+isEditMode=false;
+currentUpdateData=null;
+
+/* IMPORTANT */
+hasChanges=true;
+
+`);
+
+/* ENABLE SAVE BUTTON */
+
+parentWindow.savePlanBtn.disabled=false;
+
+/* RECALCULATE */
+
+parentWindow.calcDaily();
+
+/* FORCE SAVE DETECTION */
+
+if(parentWindow.markAsChanged){
+
+    parentWindow.markAsChanged();
+
+}
+
+/* OPTIONAL */
+
+if(parentWindow.enableSave){
+
+    parentWindow.enableSave();
+
+}
+
+alert("Excel data loaded successfully into planner");
 
     alert("Excel data loaded successfully into planner");
 
