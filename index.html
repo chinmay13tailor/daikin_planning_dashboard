@@ -296,6 +296,60 @@ cursor:pointer;
 .saveBtn:hover{
 box-shadow:0 6px 16px rgba(37,99,235,.4);
 }
+
+  /* UPLOAD MODAL */
+
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.5);
+z-index:9999;
+justify-content:center;
+align-items:center;
+padding:20px;
+}
+
+.modal-content{
+width:95%;
+height:95%;
+background:white;
+border-radius:14px;
+overflow:hidden;
+position:relative;
+box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+
+.modal-header{
+height:55px;
+background:#165da8;
+color:white;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:0 20px;
+font-size:18px;
+font-weight:600;
+}
+
+.closeModal{
+background:white;
+color:#165da8;
+border:none;
+padding:6px 14px;
+border-radius:8px;
+cursor:pointer;
+font-weight:600;
+}
+
+.modal iframe{
+width:100%;
+height:calc(100% - 55px);
+border:none;
+}
 </style>
 </head>
 
@@ -377,6 +431,8 @@ Analytics
 <div class="plan-buttons">
 
 <button id="addPlanBtn" class="plan-btn" onclick="enableAddMode()">Add Plan</button>
+
+<button class="plan-btn" onclick="openUploader()">Upload Excel</button>
 
 <button id="updatePlanBtn" class="plan-btn" onclick="enableUpdateMode()">Update Plan</button>
 
@@ -786,6 +842,23 @@ await loadMonthData();
 selectDate(selectedDate);
 
 }
+/* OPEN UPLOADER */
+
+function openUploader(){
+
+document.getElementById("uploaderModal").style.display="flex";
+
+}
+
+/* CLOSE UPLOADER */
+
+function closeUploader(){
+
+document.getElementById("uploaderModal").style.display="none";
+
+}
+
+  
 function openAnalytics(){
 
 const token = new URLSearchParams(location.search).get("token") || "";
@@ -795,6 +868,24 @@ window.location.href = "analytics.html?token=" + token;
 }
 
 </script>
+<!-- EXCEL UPLOADER MODAL -->
 
+<div class="modal" id="uploaderModal">
+
+<div class="modal-content">
+
+<div class="modal-header">
+
+<span>Excel Upload</span>
+
+<button class="closeModal" onclick="closeUploader()">Close</button>
+
+</div>
+
+<iframe src="uploader.html"></iframe>
+
+</div>
+
+</div>
 </body>
 </html>
