@@ -364,12 +364,9 @@ function uploadToPlanner(){
 
         /* SELECT DATE */
 
-                window.parent.eval(`
-        selectedDate='${convertDate(planDate)}';
-        `);
+        parentWindow.selectDate(convertDate(planDate));
 
-        parentWindow.document.getElementById("selectedDate").innerText =
-            convertDate(planDate);
+
 
         /* ADD ROW */
 
